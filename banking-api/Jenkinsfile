@@ -64,6 +64,14 @@ pipeline {
                 }
             }
         }
+
+        stage('Verify Deployment') {
+            steps {
+                                sh "kubectl get all -n banking-api"
+                                sh "kubectl get endpoints -n banking-api"
+                                sh "kubectl get pods -n banking-api -o wide"
+            }
+        }
     }
 
     post {
