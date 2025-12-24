@@ -172,19 +172,69 @@
         state: started
         enabled: yes
 
-    - name: Wait for Jenkins to start
+    - name: Wait for Jenkins to start (port 8080)
       wait_for:
+        port: 8080
+        host: localhost
+        timeout: 120
+
+    - name: Check if Jenkins initial password exists
+      stat:
         path: /var/lib/jenkins/secrets/initialAdminPassword
-        timeout: 60
+      register: jenkins_password_file
 
     - name: Get Jenkins initial password
       slurp:
         src: /var/lib/jenkins/secrets/initialAdminPassword
       register: jenkins_password
+      when: jenkins_password_file.stat.exists
 
     - name: Display Jenkins password
       debug:
         msg: "Jenkins password: {{ jenkins_password['content'] | b64decode }}"
+      when: jenkins_password_file.stat.exists
+
+    - name: Display message if password file not found
+      debug:
+        msg: "Jenkins already configured or password file not found. Check Jenkins UI."
+      when: not jenkins_password_file.stat.exists
+
+    # ========================================
+    # 6.1 CONFIGURE JENKINS USER PRIVILEGES
+    # ========================================
+    - name: Enable passwordless sudo for jenkins user
+      lineinfile:
+        path: /etc/sudoers.d/jenkins
+        line: "jenkins ALL=(ALL) NOPASSWD:ALL"
+        create: yes
+        mode: '0440'
+        validate: 'visudo -cf %s'
+
+    - name: Create .kube directory for jenkins user
+      file:
+        path: /var/lib/jenkins/.kube
+        state: directory
+        owner: jenkins
+        group: jenkins
+        mode: '0755'
+
+    - name: Copy kubeconfig to jenkins user (if exists)
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /var/lib/jenkins/.kube/config
+        owner: jenkins
+        group: jenkins
+        mode: '0600'
+        remote_src: yes
+      ignore_errors: yes
+
+    - name: Set KUBECONFIG in jenkins profile
+      lineinfile:
+        path: /var/lib/jenkins/.bashrc
+        line: "export KUBECONFIG=/var/lib/jenkins/.kube/config"
+        create: yes
+        owner: jenkins
+        group: jenkins
 
     # ========================================
     # 7. CONFIGURE FIREWALL (UFW)
@@ -258,11 +308,10 @@
           ✓ Kubernetes tools installed (kubeadm, kubelet, kubectl)
           ✓ Helm installed
           ✓ Jenkins installed (access at http://{{ ansible_host }}:8080)
+          ✓ Jenkins user configured with sudo + kubectl access
           ✓ Firewall configured
           ✓ Swap disabled
           ✓ NGINX test container running on port 8888
-          
-          Jenkins Password: {{ jenkins_password['content'] | b64decode }}
           ========================================
 
     # ========================================

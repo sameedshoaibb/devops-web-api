@@ -1,9 +1,16 @@
 #!/bin/bash
-set -e
 
 [[ $EUID -ne 0 ]] && echo "Run as root" && exit 1
 
 PRIVATE_IP=$(hostname -I | awk '{print $1}')
+
+# Check if cluster is already initialized
+if [ -f /etc/kubernetes/admin.conf ]; then
+    echo "Kubernetes cluster already initialized. Skipping init."
+    export KUBECONFIG=/etc/kubernetes/admin.conf
+    kubectl get nodes
+    exit 0
+fi
 
 # Configure containerd
 mkdir -p /etc/containerd
