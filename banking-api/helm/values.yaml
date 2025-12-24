@@ -4,9 +4,9 @@ replicaCount: 1
 
 # Application configuration
 app:
-  name: banking-api
+  name: sameedshoaib1/banking-api
   version: "1.0.0"
-  image: banking-api
+  image: sameedshoaib1/banking-api
   imageTag: v0.0.17
   imagePullPolicy: IfNotPresent
   port: 4000
