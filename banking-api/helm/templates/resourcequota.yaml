@@ -11,4 +11,4 @@ spec:
     limits.cpu: {{ .Values.resourceQuota.hard.limits.cpu | quote }}
     requests.memory: {{ .Values.resourceQuota.hard.requests.memory | quote }}
     limits.memory: {{ .Values.resourceQuota.hard.limits.memory | quote }}
-    requests.storage: {{ .Values.resourceQuota.hard.storage | quote }}
+    requests.storage: {{ .Values.resourceQuota.hard.requests.storage | quote }}

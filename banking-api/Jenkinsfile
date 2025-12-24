@@ -50,7 +50,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 dir('banking-api') {
-                    sh "./scripts/deploy/deploy.sh prod"
+                    sh "sudo -u devops ./scripts/deploy/deploy.sh prod"
                 }
             }
         }
