@@ -1,0 +1,24 @@
+# hpa is disabled
+# The banking-api uses in-memory state and cannot be horizontally scaled
+# If we attach persistent storage, we may use this configiration
+#
+# apiVersion: autoscaling/v2
+# kind: HorizontalPodAutoscaler
+# metadata:
+#   name: banking-api
+#   labels:
+#     app: banking-api
+# spec:
+#   scaleTargetRef:
+#     apiVersion: apps/v1
+#     kind: Deployment
+#     name: banking-api
+#   minReplicas: 1
+#   maxReplicas: 3
+#   metrics:
+#   - type: Resource
+#     resource:
+#       name: cpu
+#       target:
+#         type: Utilization
+#         averageUtilization: 80

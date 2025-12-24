@@ -1,0 +1,266 @@
+---
+# Simple Infrastructure Setup Playbook
+# Installs Docker, Kubernetes, Helm, Jenkins, and configures Ubuntu server
+
+- name: Setup Infrastructure
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    # ========================================
+    # 1. SYSTEM UPDATE
+    # ========================================
+    - name: Update apt cache and upgrade packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+        autoremove: yes
+
+    - name: Install essential packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - software-properties-common
+          - python3-pip
+        state: present
+
+    # ========================================
+    # 2. CREATE NON-ROOT USER
+    # ========================================
+    - name: Create devops user
+      user:
+        name: "{{ devops_user }}"
+        groups: sudo
+        shell: /bin/bash
+        create_home: yes
+        state: present
+
+    - name: Add SSH key for devops user
+      authorized_key:
+        user: "{{ devops_user }}"
+        key: "{{ ssh_public_key }}"
+        state: present
+
+    - name: Enable passwordless sudo for devops user
+      lineinfile:
+        path: /etc/sudoers.d/{{ devops_user }}
+        line: "{{ devops_user }} ALL=(ALL) NOPASSWD:ALL"
+        create: yes
+        mode: '0440'
+        validate: 'visudo -cf %s'
+
+    # ========================================
+    # 3. INSTALL DOCKER
+    # ========================================
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Install Docker
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+        update_cache: yes
+
+    - name: Add users to docker group
+      user:
+        name: "{{ item }}"
+        groups: docker
+        append: yes
+      loop:
+        - "{{ devops_user }}"
+        - ubuntu
+
+    - name: Start and enable Docker
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    # ========================================
+    # 4. INSTALL KUBERNETES TOOLS
+    # ========================================
+    - name: Add Kubernetes GPG key
+      apt_key:
+        url: https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key
+        state: present
+        keyring: /usr/share/keyrings/kubernetes-archive-keyring.gpg
+
+    - name: Add Kubernetes repository
+      apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /"
+        state: present
+
+    - name: Install Kubernetes tools
+      apt:
+        name:
+          - kubelet
+          - kubeadm
+          - kubectl
+        state: present
+        update_cache: yes
+
+    - name: Hold Kubernetes packages
+      dpkg_selections:
+        name: "{{ item }}"
+        selection: hold
+      loop:
+        - kubelet
+        - kubeadm
+        - kubectl
+
+    # ========================================
+    # 5. INSTALL HELM
+    # ========================================
+    - name: Download Helm install script
+      get_url:
+        url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+        dest: /tmp/get_helm.sh
+        mode: '0700'
+
+    - name: Install Helm
+      shell: /tmp/get_helm.sh
+      args:
+        creates: /usr/local/bin/helm
+
+    # ========================================
+    # 6. INSTALL JENKINS
+    # ========================================
+    - name: Add Jenkins GPG key
+      apt_key:
+        url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+        state: present
+
+    - name: Add Jenkins repository
+      apt_repository:
+        repo: "deb https://pkg.jenkins.io/debian-stable binary/"
+        state: present
+
+    - name: Install Java (required for Jenkins)
+      apt:
+        name: openjdk-17-jdk
+        state: present
+        update_cache: yes
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+
+    - name: Add jenkins user to docker group
+      user:
+        name: jenkins
+        groups: docker
+        append: yes
+
+    - name: Start and enable Jenkins
+      systemd:
+        name: jenkins
+        state: started
+        enabled: yes
+
+    - name: Wait for Jenkins to start
+      wait_for:
+        path: /var/lib/jenkins/secrets/initialAdminPassword
+        timeout: 60
+
+    - name: Get Jenkins initial password
+      slurp:
+        src: /var/lib/jenkins/secrets/initialAdminPassword
+      register: jenkins_password
+
+    - name: Display Jenkins password
+      debug:
+        msg: "Jenkins password: {{ jenkins_password['content'] | b64decode }}"
+
+    # ========================================
+    # 7. CONFIGURE FIREWALL (UFW)
+    # ========================================
+    - name: Install UFW
+      apt:
+        name: ufw
+        state: present
+
+    - name: Allow firewall ports
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop: "{{ firewall_ports }}"
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+
+    # ========================================
+    # 8. DISABLE SWAP (for Kubernetes)
+    # ========================================
+    - name: Disable swap
+      command: swapoff -a
+      when: ansible_swaptotal_mb > 0
+
+    - name: Remove swap from /etc/fstab
+      lineinfile:
+        path: /etc/fstab
+        regexp: '^\s*([^#\s]+\s+){1}(none|swap)\s+'
+        state: absent
+
+    # ========================================
+    # 9. DEPLOY TEST NGINX CONTAINER
+    # ========================================
+    - name: Pull NGINX image
+      docker_image:
+        name: nginx
+        tag: alpine
+        source: pull
+
+    - name: Run NGINX test container
+      docker_container:
+        name: nginx-test
+        image: nginx:alpine
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "8888:80"
+
+    - name: Test NGINX accessibility
+      uri:
+        url: http://localhost:8888
+        status_code: 200
+      retries: 3
+      delay: 5
+
+    # ========================================
+    # FINAL MESSAGE
+    # ========================================
+    - name: Display completion message
+      debug:
+        msg: |
+          ========================================
+          Setup Complete!
+          ========================================
+          ✓ System updated
+          ✓ User '{{ devops_user }}' created with sudo access
+          ✓ Docker installed
+          ✓ Kubernetes tools installed (kubeadm, kubelet, kubectl)
+          ✓ Helm installed
+          ✓ Jenkins installed (access at http://{{ ansible_host }}:8080)
+          ✓ Firewall configured
+          ✓ Swap disabled
+          ✓ NGINX test container running on port 8888
+          
+          Jenkins Password: {{ jenkins_password['content'] | b64decode }}
+          ========================================

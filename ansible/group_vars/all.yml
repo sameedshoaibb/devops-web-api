@@ -1,0 +1,15 @@
+---
+# Configuration Variables
+
+# User configuration
+devops_user: devops
+ssh_public_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC... your-public-key-here"
+
+# Firewall ports
+firewall_ports:
+  - 22    # SSH
+  - 80    # HTTP
+  - 443   # HTTPS
+  - 6443  # Kubernetes API
+  - 8080  # Jenkins
+  - 10250 # Kubelet
