@@ -3,12 +3,20 @@ pipeline {
 
     environment {
         IMAGE_NAME = 'sameedshoaib1/banking-api'
-        IMAGE_TAG = "${env.GIT_COMMIT?.take(7) ?: 'latest'}"
+        IMAGE_TAG = '1.0.2'
+        REPO_URL = 'https://github.com/sameedshoaibb/devops-web-api.git'
     }
 
     stages {
+        stage('Clone Repository') {
+            steps {
+                git branch: 'main', url: "${REPO_URL}"
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
+                sh "cd banking-api"
                 sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
             }
         }
