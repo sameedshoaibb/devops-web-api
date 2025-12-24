@@ -113,6 +113,4 @@ ansible-playbook setup.yml -vvv
 - All required software installations
 - Simple and easy to understand
 
-## Support
 
-For the complete version with advanced features, see the original role-based structure in the `roles/` directory.
