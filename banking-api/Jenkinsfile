@@ -16,13 +16,16 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh "cd banking-api"
-                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                dir('banking-api') {
+                    sh "pwd && ls -al"
+                    sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                }
             }
         }
 
         stage('Test Health Endpoint') {
             steps {
+                sh "docker rm -f banking-api-test || true"
                 sh "docker run -d --name banking-api-test -p 4000:4000 ${IMAGE_NAME}:${IMAGE_TAG}"
                 sh "sleep 5"
                 sh "curl -f http://localhost:4000/health"
@@ -33,7 +36,7 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
                     sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
                 }
             }
@@ -41,9 +44,8 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                script {
-                    def env = env.BRANCH_NAME == 'main' ? 'prod' : 'dev'
-                    sh "./scripts/deploy/deploy.sh ${env}"
+                dir('banking-api') {
+                    sh "./scripts/deploy/deploy.sh prod"
                 }
             }
         }
@@ -51,7 +53,8 @@ pipeline {
 
     post {
         always {
-            sh 'docker rmi sameedshoaib1/banking-api || true'
+            sh "docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true"
+            sh "docker rm -f banking-api-test || true"
         }
     }
 }
