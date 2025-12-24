@@ -3,7 +3,7 @@
 
 # User configuration
 devops_user: devops
-ssh_public_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC... your-public-key-here"
+ssh_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL1y/P0+p5+LMCqfH6SSHGQ7xOjLQBrW6Fqvzsvq7Do4 sameedshoaib@Sameeds-MBP.fritz.box"
 
 # Firewall ports
 firewall_ports:
@@ -13,3 +13,5 @@ firewall_ports:
   - 6443  # Kubernetes API
   - 8080  # Jenkins
   - 10250 # Kubelet
+  - 8888  # Docker Port
+

@@ -11,6 +11,10 @@ export const startApp = (config: Config) => {
     res.status(200).end()
   })
 
+  app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok' })
+  })
+
   app.use(express.json())
 
   setupAdminRoutes(app, config)

@@ -264,3 +264,20 @@
           
           Jenkins Password: {{ jenkins_password['content'] | b64decode }}
           ========================================
+
+    # ========================================
+    # 10. INITIALIZE KUBERNETES CLUSTER
+    # ========================================
+    - name: Copy k8s init script
+      copy:
+        src: scripts/install-k8s.sh
+        dest: /tmp/install-k8s.sh
+        mode: '0755'
+
+    - name: Run k8s init script
+      shell: /tmp/install-k8s.sh
+      register: k8s_output
+
+    - name: Show k8s cluster status
+      debug:
+        var: k8s_output.stdout_lines

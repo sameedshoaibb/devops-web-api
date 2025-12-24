@@ -8,7 +8,7 @@ spec:
   capacity:
     storage: {{ .Values.persistentVolume.size }}
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   storageClassName: {{ .Values.persistentVolume.storageClassName }}
   persistentVolumeReclaimPolicy: Retain
   hostPath:

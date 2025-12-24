@@ -154,33 +154,22 @@ spec:
             name: {{ .Values.app.name }}-config-template
             defaultMode: 0444
         - name: app-config
-          emptyDir:
-            medium: Memory
-            sizeLimit: 10Mi
+          emptyDir: {}
         - name: persistent-data
           persistentVolumeClaim:
-            claimName: banking-api-pvc
+            claimName: {{ .Values.app.name }}-pvc
         - name: data-file
           configMap:
             name: {{ .Values.app.name }}-data-file
             defaultMode: 0444
-
         - name: nginx-config
           configMap:
             name: {{ .Values.app.name }}-nginx
         - name: nginx-cache
-          emptyDir:
-            medium: Memory
-            sizeLimit: {{ .Values.volumes.nginxCache.sizeLimit }}
+          emptyDir: {}
         - name: nginx-run
-          emptyDir:
-            medium: Memory
-            sizeLimit: {{ .Values.volumes.nginxRun.sizeLimit }}
+          emptyDir: {}
         - name: nginx-logs
-          emptyDir:
-            medium: Memory
-            sizeLimit: {{ .Values.volumes.nginxLogs.sizeLimit }}
+          emptyDir: {}
         - name: nginx-conf-d
-          emptyDir:
-            medium: Memory
-            sizeLimit: {{ .Values.volumes.nginxConfD.sizeLimit }}
+          emptyDir: {}

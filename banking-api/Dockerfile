@@ -34,4 +34,5 @@ COPY start.sh ./
 RUN chown -R appuser:appuser /app && chmod +x start.sh
 USER appuser
 EXPOSE 4000
+HEALTHCHECK CMD wget -q --spider http://localhost:4000/health || exit 1
 CMD ["./start.sh"]

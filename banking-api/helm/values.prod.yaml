@@ -3,7 +3,7 @@
 replicaCount: 1
 
 app:
-  imageTag: v1.0.0
+  imageTag: v1.0.2
   resources:
     requests:
       cpu: "250m"
@@ -32,12 +32,12 @@ cronjob:
 resourceQuota:
   hard:
     requests:
-      cpu: "5"
-      memory: "5Gi"
-      storage: "20Gi"
-    limits:
       cpu: "10"
       memory: "10Gi"
+      storage: "50Gi"
+    limits:
+      cpu: "20"
+      memory: "20Gi"
 
 persistentVolume:
   size: 2Gi

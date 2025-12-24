@@ -101,4 +101,14 @@ priorityClass:
   value: 1000
   description: "Banking API - critical workload"
 
+# Persistent Volume configuration
+persistentVolume:
+  size: 1Gi
+  storageClassName: manual
+
+# Persistent Volume Claim configuration
+persistentVolumeClaim:
+  size: 1Gi
+  storageClassName: manual
+
 
