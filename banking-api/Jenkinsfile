@@ -16,8 +16,13 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
+                sh "pwd"
+                sh "ls -al"
+                sh "ls -al banking-api || echo 'banking-api folder not found'"
+                sh "cat banking-api/Dockerfile || echo 'Dockerfile not found'"
                 dir('banking-api') {
-                    sh "pwd && ls -al"
+                    sh "pwd"
+                    sh "ls -al"
                     sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
                 }
             }
