@@ -116,8 +116,3 @@ ansible-playbook setup.yml -vvv
 ## Support
 
 For the complete version with advanced features, see the original role-based structure in the `roles/` directory.
-
----
-
-**Execution Time**: ~10-15 minutes  
-**Total Lines**: ~250 lines vs 1000+ in complex version
