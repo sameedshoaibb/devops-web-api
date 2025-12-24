@@ -119,7 +119,7 @@ Deploy to your desired environment:
 ### Step 4: Port Forwarding (for local testing)
 
 ```bash
-kubectl port-forward -n banking-api svc/banking-api 8080:80 &
+kubectl port-forward -n banking-api svc/banking-api 8181:80 &
 ```
 
 **Note:** Port forwarding is used for local testing. Ingress was avoided to prevent requiring `/etc/hosts` file modifications with admin privileges.
@@ -136,20 +136,30 @@ kubectl get all -n banking-api
 
 **Expected Output:**
 ```
-NAME                               READY   STATUS    RESTARTS   AGE
-pod/banking-api-84dcf78fb8-smjnn   2/2     Running   0          39s
+pod/banking-api-5ff446d8ff-8zphv               2/2     Running     0          27m
+pod/banking-api-5ff446d8ff-snpqv               2/2     Running     0          27m
+pod/banking-api-balance-check-29443586-7gt8t   0/1     Completed   0          7s
 
 NAME                  TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)           AGE
-service/banking-api   ClusterIP   10.96.178.224   <none>        80/TCP,4000/TCP   39s
+service/banking-api   ClusterIP   10.99.250.178   <none>        80/TCP,4000/TCP   27m
 
 NAME                          READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/banking-api   1/1     1            1           39s
+deployment.apps/banking-api   2/2     2            2           27m
 
 NAME                                     DESIRED   CURRENT   READY   AGE
-replicaset.apps/banking-api-84dcf78fb8   1         1         1       39s
+replicaset.apps/banking-api-5ff446d8ff   2         2         2       27m
 
-NAME                                      SCHEDULE       TIMEZONE   SUSPEND   ACTIVE   LAST SCHEDULE   AGE
-cronjob.batch/banking-api-balance-check   */1 * * * *   <none>     False     0        <none>          39s
+NAME                                              REFERENCE                TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+horizontalpodautoscaler.autoscaling/banking-api   Deployment/banking-api   <unknown>/70%   2         5         2          27m
+
+NAME                                      SCHEDULE      SUSPEND   ACTIVE   LAST SCHEDULE   AGE
+cronjob.batch/banking-api-balance-check   */1 * * * *   False     0        7s              27m
+
+NAME                                           COMPLETIONS   DURATION   AGE
+job.batch/banking-api-balance-check-29443559   0/1           27m        27m
+job.batch/banking-api-balance-check-29443584   1/1           4s         2m7s
+job.batch/banking-api-balance-check-29443585   1/1           4s         67s
+job.batch/banking-api-balance-check-29443586   1/1           4s         7s
 ```
 
 ---
@@ -159,14 +169,14 @@ cronjob.batch/banking-api-balance-check   */1 * * * *   <none>     False     0  
 ### Endpoint 1: Health Check (Ping)
 
 ```bash
-curl -s http://localhost:8080/ping
+curl -s http://localhost:8181/ping
 ```
 **Note:** We are using nginx reverse proxy to route the request to our backend-api.
 
 ### Endpoint 2: Create Account (Admin Only)
 
 ```bash
-curl -s -X POST http://localhost:8080/admin/account \
+curl -s -X POST http://localhost:8181/admin/account \
   -H "x-api-key: sameed" \
   -H "Content-Type: application/json" \
   -d '{"accountId":"test1","password":"pass123"}'
@@ -177,7 +187,7 @@ curl -s -X POST http://localhost:8080/admin/account \
 ### Endpoint 3: Get Account Info
 
 ```bash
-curl -s -X POST http://localhost:8080/account/test1/info \
+curl -s -X POST http://localhost:8181/account/test1/info \
   -H "Content-Type: application/json" \
   -d '{"password":"pass123"}'
 ```
@@ -185,7 +195,7 @@ curl -s -X POST http://localhost:8080/account/test1/info \
 ### Endpoint 4: Deposit Funds
 
 ```bash
-curl -s -X POST http://localhost:8080/account/test1/deposit \
+curl -s -X POST http://localhost:8181/account/test1/deposit \
   -H "Content-Type: application/json" \
   -d '{"password":"pass123","amount":5000}'
 ```
@@ -193,7 +203,7 @@ curl -s -X POST http://localhost:8080/account/test1/deposit \
 ### Endpoint 5: Withdraw Funds
 
 ```bash
-curl -s -X POST http://localhost:8080/account/test1/withdraw \
+curl -s -X POST http://localhost:8181/account/test1/withdraw \
   -H "Content-Type: application/json" \
   -d '{"password":"pass123","amount":41500}'
 ```
@@ -201,7 +211,7 @@ curl -s -X POST http://localhost:8080/account/test1/withdraw \
 ### Endpoint 6: List All Accounts (Admin Only)
 
 ```bash
-curl -s -H "x-api-key: sameed" http://localhost:8080/admin/accounts
+curl -s -H "x-api-key: sameed" http://localhost:8181/admin/accounts
 ```
 
 **Note:** Delete API only works if account balance is zero.
@@ -227,11 +237,11 @@ kubectl exec -n banking-api deploy/banking-api -c nginx-proxy -- tail -5 /var/lo
 
 **Sample Output:**
 ```
-[SLOW_REQUEST] [30/Nov/2025:16:43:38 +0000] Remote: 127.0.0.1 | Request: POST /account/test1/withdraw HTTP/1.1 | Status: 200 | Time: 0.002 s
-[SLOW_REQUEST] [30/Nov/2025:16:43:39 +0000] Remote: 127.0.0.1 | Request: POST /account/test1/deposit HTTP/1.1 | Status: 200 | Time: 0.002 s
-[SLOW_REQUEST] [30/Nov/2025:16:43:40 +0000] Remote: 127.0.0.1 | Request: POST /account/test1/withdraw HTTP/1.1 | Status: 200 | Time: 0.002 s
-[SLOW_REQUEST] [30/Nov/2025:16:43:42 +0000] Remote: 127.0.0.1 | Request: POST /account/test1/withdraw HTTP/1.1 | Status: 200 | Time: 0.002 s
-[SLOW_REQUEST] [30/Nov/2025:16:43:47 +0000] Remote: 127.0.0.1 | Request: GET /admin/accounts HTTP/1.1 | Status: 200 | Time: 0.002 s
+[SLOW_REQUEST] [25/Dec/2025:16:43:38 +0000] Remote: 127.0.0.1 | Request: POST /account/test1/withdraw HTTP/1.1 | Status: 200 | Time: 0.002 s
+[SLOW_REQUEST] [25/Dec/2025:16:43:39 +0000] Remote: 127.0.0.1 | Request: POST /account/test1/deposit HTTP/1.1 | Status: 200 | Time: 0.002 s
+[SLOW_REQUEST] [25/Dec/2025:16:43:40 +0000] Remote: 127.0.0.1 | Request: POST /account/test1/withdraw HTTP/1.1 | Status: 200 | Time: 0.002 s
+[SLOW_REQUEST] [25/Dec/2025:16:43:42 +0000] Remote: 127.0.0.1 | Request: POST /account/test1/withdraw HTTP/1.1 | Status: 200 | Time: 0.002 s
+[SLOW_REQUEST] [25/Dec/2025:16:43:47 +0000] Remote: 127.0.0.1 | Request: GET /admin/accounts HTTP/1.1 | Status: 200 | Time: 0.002 s
 ```
 
 ### 2. CronJob - Balance Check Status
@@ -245,12 +255,12 @@ kubectl logs -n banking-api -l job-type=cronjob --tail=10
 
 **Sample Output:**
 ```
-[2025-11-30 16:43:01] Starting balance check (threshold: -10000)
+[2025-12/25 16:43:01] Starting balance check (threshold: -10000)
 OK: No accounts found with critically low balance
-[2025-11-30 16:44:00] Starting balance check (threshold: -10000)
+[2025-12/25 16:44:00] Starting balance check (threshold: -10000)
 ALERT: One or more accounts have a very low balance (below -10000)
 Alert email: alert@example.org
-[2025-11-30 16:45:00] Starting balance check (threshold: -10000)
+[2025-12/25 16:45:00] Starting balance check (threshold: -10000)
 ALERT: One or more accounts have a very low balance (below -10000)
 Alert email: alert@example.org
 ```

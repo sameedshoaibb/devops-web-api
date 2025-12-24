@@ -61,6 +61,7 @@ pipeline {
             steps {
                 dir('banking-api') {
                     sh "./scripts/deploy/deploy.sh prod"
+                    sh "sleep 55"
                 }
             }
         }
@@ -70,6 +71,31 @@ pipeline {
                                 sh "kubectl get all -n banking-api"
                                 sh "kubectl get endpoints -n banking-api"
                                 sh "kubectl get pods -n banking-api -o wide"
+                                echo 'Testing /admin/account endpoint:'
+                                sh '''
+                                    ADMIN_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:8080/admin/account \
+                                        -H "x-api-key: sameed" \
+                                        -H "Content-Type: application/json" \
+                                        -d '{"accountId":"test1","password":"pass123"}')
+                                    echo "$ADMIN_RESPONSE"
+                                    ADMIN_STATUS=$(echo "$ADMIN_RESPONSE" | tail -n1)
+                                    if [ "$ADMIN_STATUS" -ne 200 ]; then
+                                        echo "Admin account endpoint failed!"
+                                        exit 1
+                                    fi
+                                '''
+                                echo 'Testing /account/test1/info endpoint:'
+                                sh '''
+                                    INFO_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:8080/account/test1/info \
+                                        -H "Content-Type: application/json" \
+                                        -d '{"password":"pass123"}')
+                                    echo "$INFO_RESPONSE"
+                                    INFO_STATUS=$(echo "$INFO_RESPONSE" | tail -n1)
+                                    if [ "$INFO_STATUS" -ne 200 ]; then
+                                        echo "/account/test1/info endpoint failed!"
+                                        exit 1
+                                    fi
+                                '''
             }
         }
     }
@@ -77,7 +103,6 @@ pipeline {
     post {
         always {
             sh "docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true"
-            sh "docker rm -f banking-api-test || true"
         }
     }
 }
