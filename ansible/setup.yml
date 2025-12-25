@@ -294,27 +294,6 @@
       delay: 5
 
     # ========================================
-    # FINAL MESSAGE
-    # ========================================
-    - name: Display completion message
-      debug:
-        msg: |
-          ========================================
-          Setup Complete!
-          ========================================
-          ✓ System updated
-          ✓ User '{{ devops_user }}' created with sudo access
-          ✓ Docker installed
-          ✓ Kubernetes tools installed (kubeadm, kubelet, kubectl)
-          ✓ Helm installed
-          ✓ Jenkins installed (access at http://{{ ansible_host }}:8080)
-          ✓ Jenkins user configured with sudo + kubectl access
-          ✓ Firewall configured
-          ✓ Swap disabled
-          ✓ NGINX test container running on port 8888
-          ========================================
-
-    # ========================================
     # 10. INITIALIZE KUBERNETES CLUSTER
     # ========================================
     - name: Copy k8s init script
@@ -330,3 +309,157 @@
     - name: Show k8s cluster status
       debug:
         var: k8s_output.stdout_lines
+
+    - name: Set up kubeconfig for root user
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /root/.kube/config
+        owner: root
+        group: root
+        mode: '0600'
+        remote_src: yes
+      ignore_errors: yes
+
+    - name: Create .kube directory for root
+      file:
+        path: /root/.kube
+        state: directory
+        mode: '0755'
+
+    # ========================================
+    # 11. INSTALL ARGOCD
+    # ========================================
+    - name: Wait for Kubernetes cluster to be ready
+      shell: kubectl get nodes --no-headers=true | grep -q "Ready"
+      register: cluster_ready
+      until: cluster_ready.rc == 0
+      retries: 30
+      delay: 10
+      environment:
+        KUBECONFIG: "/root/.kube/config"
+
+    - name: Create ArgoCD namespace
+      shell: kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+      environment:
+        KUBECONFIG: "/root/.kube/config"
+
+    - name: Download ArgoCD manifest
+      get_url:
+        url: https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+        dest: /tmp/argocd-install.yaml
+        mode: '0644'
+
+    - name: Install ArgoCD
+      shell: kubectl apply -n argocd -f /tmp/argocd-install.yaml
+      environment:
+        KUBECONFIG: "/root/.kube/config"
+
+    - name: Wait for ArgoCD deployment to be ready
+      shell: kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=300s
+      environment:
+        KUBECONFIG: "/root/.kube/config"
+
+    - name: Create ArgoCD NodePort service manifest
+      copy:
+        content: |
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: argocd-server-nodeport
+            namespace: argocd
+            labels:
+              app.kubernetes.io/component: server
+              app.kubernetes.io/name: argocd-server
+              app.kubernetes.io/part-of: argocd
+          spec:
+            type: NodePort
+            ports:
+              - name: server
+                port: 80
+                protocol: TCP
+                targetPort: 8080
+                nodePort: 30080
+              - name: grpc
+                port: 443
+                protocol: TCP
+                targetPort: 8080
+                nodePort: 30443
+            selector:
+              app.kubernetes.io/name: argocd-server
+        dest: /tmp/argocd-nodeport.yaml
+        mode: '0644'
+
+    - name: Apply ArgoCD NodePort service
+      shell: kubectl apply -f /tmp/argocd-nodeport.yaml
+      environment:
+        KUBECONFIG: "/root/.kube/config"
+
+    - name: Get ArgoCD initial admin password
+      shell: |
+        kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+      register: argocd_password
+      environment:
+        KUBECONFIG: "/root/.kube/config"
+      ignore_errors: yes
+
+    - name: Install ArgoCD CLI
+      get_url:
+        url: "https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64"
+        dest: /usr/local/bin/argocd
+        mode: '0755'
+
+    - name: Create ArgoCD CLI symlink
+      file:
+        src: /usr/local/bin/argocd
+        dest: /usr/local/bin/argocd-cli
+        state: link
+
+    - name: Add ArgoCD server port to firewall
+      ufw:
+        rule: allow
+        port: 30080
+        proto: tcp
+        comment: "ArgoCD Web UI"
+
+    - name: Add ArgoCD gRPC port to firewall
+      ufw:
+        rule: allow
+        port: 30443
+        proto: tcp
+        comment: "ArgoCD gRPC"
+
+    # ========================================
+    # 12. FINAL SETUP SUMMARY
+    # ========================================
+    - name: Final setup summary
+      debug:
+        msg: |
+          ========================================
+          Setup Complete!
+          ========================================
+          ✓ System updated
+          ✓ User '{{ devops_user }}' created with sudo access
+          ✓ Docker installed
+          ✓ Kubernetes tools installed (kubeadm, kubelet, kubectl)
+          ✓ Helm installed
+          ✓ Jenkins installed (access at http://{{ ansible_host }}:8080)
+          ✓ Jenkins user configured with sudo + kubectl access
+          ✓ Firewall configured
+          ✓ Swap disabled
+          ✓ NGINX test container running on port 8888
+          ✓ Kubernetes cluster initialized
+          ✓ ArgoCD installed and configured
+          ========================================
+
+          Access Information:
+          - Jenkins Web UI: http://{{ ansible_host }}:8080
+          - ArgoCD Web UI: http://{{ ansible_host }}:30080
+          - ArgoCD Admin Password: {{ argocd_password.stdout | default('Check manually with: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d') }}
+          - NGINX Test: http://{{ ansible_host }}:8888
+
+          Next Steps:
+          1. Access ArgoCD at http://{{ ansible_host }}:30080
+          2. Login with username 'admin' and the password shown above
+          3. Create your first ArgoCD application
+          4. Set up GitOps repository for continuous deployment
+          ========================================

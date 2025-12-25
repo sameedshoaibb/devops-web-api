@@ -14,12 +14,19 @@ The playbook installs and configures the following components:
 - Kubernetes tools (kubeadm, kubelet, kubectl)
 - Helm package manager
 - Jenkins CI/CD server
+- ArgoCD GitOps platform
 
 **Security and User Management:**
 - Non-root user with SSH access and sudo privileges
 - UFW firewall with configured ports
 - Swap disabled (required for Kubernetes)
 - SSH key-based authentication
+
+**GitOps and Automation:**
+- ArgoCD for continuous deployment
+- Jenkins for CI/CD pipelines
+- Automated GitOps workflow setup
+- Multi-environment deployment capability
 
 **Testing and Verification:**
 - NGINX test container for Docker verification
@@ -43,11 +50,15 @@ ansible/
 ├── ansible.cfg              # Ansible configuration settings
 ├── inventory.ini            # Target server definitions
 ├── setup.yml               # Main provisioning playbook
+├── requirements.yml         # Ansible collection requirements
 ├── group_vars/
 │   └── all.yml             # Global variables and settings
 ├── scripts/
 │   └── install-k8s.sh      # Kubernetes cluster initialization
 ├── commands.txt            # Manual command reference
+├── QUICKSTART.md           # Quick setup guide
+├── ARGOCD.md               # ArgoCD setup and usage guide
+└── README.md               # This documentation
 ├── QUICKSTART.md           # Quick setup guide
 └── README.md               # This documentation
 ```
@@ -64,6 +75,19 @@ Before running this playbook, ensure you have:
 - Ansible installed on your local machine: `pip3 install ansible`
 - SSH access to the target server
 - sudo privileges on the target server
+
+### Install Required Collections
+
+Install the required Ansible collections:
+
+```bash
+ansible-galaxy collection install -r requirements.yml
+```
+
+Or install individually:
+```bash
+ansible-galaxy collection install kubernetes.core
+```
 
 ### Configuration
 
