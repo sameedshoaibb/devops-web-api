@@ -3,7 +3,7 @@
 replicaCount: 1
 
 app:
-  imageTag: v1.0.2
+  imageTag: v1.0.28
   resources:
     requests:
       cpu: "250m"
@@ -14,7 +14,7 @@ app:
 
 nginx:
   image: nginx
-  imageTag: "1.26.1-alpine"
+  imageTag: v1.0.28
   imagePullPolicy: IfNotPresent
   resources:
     requests:
