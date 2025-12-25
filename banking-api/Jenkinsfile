@@ -241,7 +241,7 @@ pipeline {
                             git add banking-api/helm/values.prod.yaml
                             
                             # Also update Jenkinsfile with new IMAGE_TAG
-                            sed -i "s/IMAGE_TAG = .*/IMAGE_TAG = '${IMAGE_TAG}'/" banking-api/Jenkinsfile
+                            sed -i "s/IMAGE_TAG = 'v1.0.1'
                             git add banking-api/Jenkinsfile
                             
                             git commit -m "Update Helm values and image tag to ${IMAGE_TAG}"
