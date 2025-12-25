@@ -9,6 +9,10 @@ pipeline {
 
     environment {
         IMAGE_NAME = 'sameedshoaib1/banking-api'
+<<<<<<< HEAD
+=======
+        IMAGE_TAG = 'v1.0.29'
+>>>>>>> 6c64e60a82adffc3a8269fac095802fe8abbffe2
         REPO_URL = 'https://github.com/sameedshoaibb/devops-web-api.git'
     }
 
