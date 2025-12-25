@@ -68,56 +68,72 @@ oncare-devops-task/
 ├── README.md
 ├── banking.md
 │
-├── platform/                          Platform - Infrastructure setup
-│   ├── ansible/                       Ansible playbooks for automated provisioning
-│   │   ├── ansible.cfg                Ansible configuration
-│   │   ├── inventory.ini              Server inventory and details
-│   │   ├── setup.yml                  Main setup playbook
-│   │   ├── requirements.yml           Required Ansible roles
-│   │   ├── group_vars/                Group variables configuration
-│   │   ├── scripts/                   Installation scripts
-│   │   ├── README.md                  Ansible documentation
-│   │   └── ARGOCD.md                  ArgoCD setup guide
-│   └── terraform/                     Infrastructure as Code for cloud (future)
+├── platform/
+│   ├── ansible/
+│   │   ├── ansible.cfg
+│   │   ├── inventory.ini
+│   │   ├── setup.yml
+│   │   ├── requirements.yml
+│   │   ├── group_vars/
+│   │   │   └── all.yml
+│   │   ├── scripts/
+│   │   ├── README.md
+│   │   └── ARGOCD.md
+│   └── terraform/
 │
-└── care-banking-api/                  Application - Banking API code and deployment
-    ├── src/                           Source code
-    │   ├── index.ts                   Entry point
-    │   ├── app.ts                     Express server setup
-    │   ├── config.ts                  Configuration
-    │   ├── state.ts                   Global state
-    │   ├── adminRoutes.ts             Admin endpoints
-    │   └── userRoutes.ts              User endpoints
+└── care-banking-api/
+    ├── src/
+    │   ├── index.ts
+    │   ├── app.ts
+    │   ├── config.ts
+    │   ├── state.ts
+    │   ├── adminRoutes.ts
+    │   └── userRoutes.ts
     │
-    ├── helm/                          Kubernetes deployment configuration
-    │   ├── Chart.yaml                 Helm chart metadata
-    │   ├── values.yaml                Default values
-    │   ├── values.dev.yaml            Development environment values
-    │   ├── values.staging.yaml        Staging environment values
-    │   ├── values.prod.yaml           Production environment values
-    │   └── templates/                 Kubernetes resource templates
-    │       ├── rbac/                  Role-based access control templates
-    │       ├── storage/               Persistent storage templates
-    │       ├── policies/              Network and resource policy templates
-    │       ├── advanced/              Auto-scaling and scheduling templates
-    │       └── nginx/                 Nginx reverse proxy configuration
+    ├── helm/
+    │   ├── Chart.yaml
+    │   ├── README.md
+    │   ├── values.yaml
+    │   ├── values.dev.yaml
+    │   ├── values.staging.yaml
+    │   ├── values.prod.yaml
+    │   └── templates/
+    │       ├── _helpers.tpl
+    │       ├── deployment.yaml
+    │       ├── service.yaml
+    │       ├── configmap.yaml
+    │       ├── secret.yaml
+    │       ├── ingress.yaml
+    │       ├── data-file-configmap.yaml
+    │       ├── rbac/
+    │       │   ├── role.yaml
+    │       │   ├── rolebinding.yaml
+    │       │   └── serviceaccount.yaml
+    │       ├── storage/
+    │       │   ├── pv.yaml
+    │       │   └── pvc.yaml
+    │       ├── policies/
+    │       │   ├── networkpolicy.yaml
+    │       │   ├── poddisruptionbudget.yaml
+    │       │   └── resourcequota.yaml
+    │       ├── advanced/
+    │       │   ├── cronjob.yaml
+    │       │   ├── hpa.yaml
+    │       │   ├── vpa.yaml
+    │       │   └── priorityclass.yaml
+    │       ├── nginx/
+    │       │   └── configmap-nginx.yaml
+    │       └── tests/
+    │           └── test-connection.yaml
     │
-    ├── Dockerfile                     Container image definition
-    ├── Jenkinsfile                    CI/CD pipeline definition
-    ├── package.json                   Node.js dependencies
-    ├── start.sh                       Application startup script
-    ├── config.json                    Application configuration
-    ├── tsconfig.json                  TypeScript configuration
-    └── scripts/                       Deployment utilities
-        └── deploy/
-            └── deploy.sh              Deployment script
-```
+    ├── Dockerfile
+    ├── Jenkinsfile
+    ├── deploy.sh
     ├── start.sh
-    ├── config.json
     ├── package.json
     ├── pnpm-lock.yaml
     ├── tsconfig.json
-    ├── start.sh
+    ├── config.json
     ├── README.md
     ├── .dockerignore
     ├── .gitignore
