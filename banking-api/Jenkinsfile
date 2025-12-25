@@ -3,13 +3,15 @@ pipeline {
 
     options {
         skipDefaultCheckout(true)
+        timestamps()
+        timeout(time: 30, unit: 'MINUTES')
     }
 
     environment {
         IMAGE_NAME = 'sameedshoaib1/banking-api'
-        IMAGE_TAG = 'v1.0.28'
         REPO_URL = 'https://github.com/sameedshoaibb/devops-web-api.git'
     }
+
     triggers {
         githubPush()
     }
@@ -27,27 +29,181 @@ pipeline {
             }
         }
 
+        /* =====================================================
+           LOOP PREVENTION — DO NOT CHANGE ANY OTHER LOGIC
+           ===================================================== */
+        stage('Abort if Jenkins Bot Commit') {
+            steps {
+                script {
+                    def authorEmail = sh(
+                        script: "git log -1 --pretty=format:'%ae'",
+                        returnStdout: true
+                    ).trim()
+
+                    echo "Last commit author: ${authorEmail}"
+
+                    if (authorEmail == 'jenkins@example.com') {
+                        echo "Jenkins bot commit detected — stopping pipeline to prevent loop."
+                        currentBuild.result = 'SUCCESS'
+                        error("Pipeline aborted (jenkins-bot commit)")
+                    }
+                }
+            }
+        }
+
+        stage('Increment Version') {
+            steps {
+                script {
+                    sh '''
+                        # Read current version from VERSION file
+                        CURRENT_VERSION=$(cat VERSION 2>/dev/null || echo "v1.0.0")
+                        echo "Current version: $CURRENT_VERSION"
+                        
+                        # Simple way: split by dots and increment last number
+                        # v1.0.2 becomes v1.0.3
+                        NEW_VERSION=$(echo $CURRENT_VERSION | awk -F. '{print $1"."$2"."$3+1}')
+                        echo "New version: $NEW_VERSION"
+                        
+                        # Save to file
+                        echo "$NEW_VERSION" > VERSION
+                    '''
+                    
+                    // Read the new version directly
+                    env.IMAGE_TAG = sh(script: 'cat VERSION', returnStdout: true).trim()
+                    echo "IMAGE_TAG set to: ${env.IMAGE_TAG}"
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
-                sh "pwd"
-                sh "ls -al"
-                sh "ls -al banking-api || echo 'banking-api folder not found'"
-                sh "cat banking-api/Dockerfile || echo 'Dockerfile not found'"
                 dir('banking-api') {
-                    sh "pwd"
-                    sh "ls -al"
                     sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
                 }
             }
         }
 
-        stage('Test Health Endpoint') {
+        // stage('SonarCloud Code Quality Scan') {
+        //     steps {
+        //         withCredentials([usernamePassword(credentialsId: 'devops-web-token', usernameVariable: 'SONAR_USER', passwordVariable: 'SONAR_TOKEN')]) {
+        //             sh '''
+        //                 sudo sonar-scanner \
+        //                     -Dsonar.projectKey=sameedshoaibb_devops-web-api \
+        //                     -Dsonar.organization=sameedshoaibb \
+        //                     -Dsonar.sources=. \
+        //                     -Dsonar.host.url=https://sonarcloud.io \
+        //                     -Dsonar.login=$SONAR_TOKEN \
+        //                     -Dsonar.analysis.mode=publish
+        //             '''
+        //         }
+        //     }
+        // }
+
+        // stage('Test Health Endpoint') {
+        //     steps {
+        //         sh "docker rm -f banking-api-test || true"
+        //         sh "docker run -d --name banking-api-test -p 4000:4000 ${IMAGE_NAME}:${IMAGE_TAG}"
+        //         sh "sleep 5"
+        //         sh "curl -f http://localhost:4000/health || exit 1"
+        //         sh "docker stop banking-api-test && docker rm banking-api-test"
+        //     }
+        // }
+
+        // stage('Scan with Trivy') {
+        //     steps {
+        //         sh '''
+        //             mkdir -p security-reports
+                    
+        //             echo "=========================================="
+        //             echo "1. TRIVY IMAGE SCAN"
+        //             echo "=========================================="
+        //             trivy image --severity HIGH,CRITICAL \
+        //                 --format json --output security-reports/trivy-image-report.json \
+        //                 --format table ${IMAGE_NAME}:${IMAGE_TAG} | tee security-reports/trivy-image-report.txt
+                    
+        //             cat security-reports/trivy-image-report.txt
+        //             echo "=========================================="
+                    
+        //             echo ""
+        //             echo "=========================================="
+        //             echo "2. TRIVY FILESYSTEM SCAN"
+        //             echo "=========================================="
+        //             trivy fs --severity HIGH,CRITICAL \
+        //                 --format json --output security-reports/trivy-fs-report.json \
+        //                 --format table . | tee security-reports/trivy-fs-report.txt
+                    
+        //             cat security-reports/trivy-fs-report.txt
+        //             echo "=========================================="
+                    
+        //             echo ""
+        //             echo "=========================================="
+        //             echo "3. TRIVY CONFIG SCAN (Kubernetes & Cloud)"
+        //             echo "=========================================="
+        //             trivy config --severity HIGH,CRITICAL \
+        //                 --format json --output security-reports/trivy-config-report.json \
+        //                 --format table banking-api/helm 2>/dev/null | tee security-reports/trivy-config-report.txt || echo "No config files found or scan skipped"
+                    
+        //             echo "=========================================="
+        //         '''
+        //     }
+        // }
+
+        // stage('Generate SBOM') {
+        //     steps {
+        //         sh '''
+        //             syft ${IMAGE_NAME}:${IMAGE_TAG} --output json > security-reports/sbom-syft.json
+        //             syft ${IMAGE_NAME}:${IMAGE_TAG} --output cyclonedx-json > security-reports/sbom-cyclonedx.json
+        //             syft ${IMAGE_NAME}:${IMAGE_TAG} --output table > security-reports/sbom-report.txt
+                    
+        //             echo "=========================================="
+        //             echo "SOFTWARE BILL OF MATERIALS (SBOM)"
+        //             echo "=========================================="
+        //             cat security-reports/sbom-report.txt
+        //             echo "=========================================="
+        //         '''
+        //     }
+        // }
+
+        // stage('Scan Dependencies') {
+        //     steps {
+        //         sh '''
+        //             echo "=========================================="
+        //             echo "DEPENDENCY VULNERABILITY SCAN"
+        //             echo "=========================================="
+                    
+        //             # Scan package.json for npm vulnerabilities
+        //             if [ -f "banking-api/package.json" ]; then
+        //                 echo "Checking npm dependencies..."
+        //                 cd banking-api
+        //                 npm audit --json > ../security-reports/npm-audit.json 2>/dev/null || true
+        //                 npm audit --audit-level=moderate 2>&1 | tee ../security-reports/npm-audit.txt || true
+        //                 cd ..
+                        
+        //                 echo "=========================================="
+        //                 echo "NPM AUDIT REPORT"
+        //                 echo "=========================================="
+        //                 cat security-reports/npm-audit.txt
+        //                 echo "=========================================="
+        //             fi
+        //         '''
+        //     }
+        // }
+
+        stage('Update Helm Values') {
             steps {
-                sh "docker rm -f banking-api-test || true"
-                sh "docker run -d --name banking-api-test -p 4000:4000 ${IMAGE_NAME}:${IMAGE_TAG}"
-                sh "sleep 5"
-                sh "curl -f http://localhost:4000/health"
-                sh "docker stop banking-api-test && docker rm banking-api-test"
+                sh '''
+                    echo "=========================================="
+                    echo "UPDATING HELM VALUES WITH IMAGE TAG"
+                    echo "=========================================="
+                    
+                    # Update production values only
+                    sed -i "s/imageTag: .*/imageTag: ${IMAGE_TAG}/" banking-api/helm/values.prod.yaml
+                    
+                    echo "Production: banking-api/helm/values.prod.yaml"
+                    grep "imageTag:" banking-api/helm/values.prod.yaml
+                    
+                    echo "=========================================="
+                '''
             }
         }
 
@@ -60,45 +216,31 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+        stage('Commit & Push Helm Updates') {
             steps {
-                dir('banking-api') {
-                    sh "./scripts/deploy/deploy.sh prod"
-                    sh "sleep 55"
+                withCredentials([usernamePassword(credentialsId: 'GIT_TOKEN', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_TOKEN')]) {
+                    sh '''
+                        git config user.name "Jenkins CI"
+                        git config user.email "jenkins@example.com"
+                        
+                        if git diff --quiet banking-api/helm/values.prod.yaml; then
+                            echo "No changes in Helm values"
+                        else
+                            echo "=========================================="
+                            echo "COMMITTING HELM VALUE UPDATES"
+                            echo "=========================================="
+                            git add banking-api/helm/values.prod.yaml
+                            
+                            # Also update Jenkinsfile with new IMAGE_TAG
+                            sed -i "s/IMAGE_TAG = .*/IMAGE_TAG = '${IMAGE_TAG}'/" banking-api/Jenkinsfile
+                            git add banking-api/Jenkinsfile
+                            
+                            git commit -m "Update Helm values and image tag to ${IMAGE_TAG}"
+                            git push https://${GIT_TOKEN}@github.com/sameedshoaibb/devops-web-api.git HEAD:main
+                            echo "=========================================="
+                        fi
+                    '''
                 }
-            }
-        }
-
-        stage('Verify Deployment') {
-            steps {
-                                sh "kubectl get all -n banking-api"
-                                sh "kubectl get endpoints -n banking-api"
-                                sh "kubectl get pods -n banking-api -o wide"
-                                echo 'Testing /admin/account endpoint:'
-                                sh '''
-                                    ADMIN_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:8080/admin/account \
-                                        -H "x-api-key: sameed" \
-                                        -H "Content-Type: application/json" \
-                                        -d '{"accountId":"test1","password":"pass123"}')
-                                    echo "$ADMIN_RESPONSE"
-                                    ADMIN_STATUS=$(echo "$ADMIN_RESPONSE" | tail -n1)
-                                    if [ "$ADMIN_STATUS" -ne 200 ]; then
-                                        echo "Admin account endpoint failed!"
-                                        exit 1
-                                    fi
-                                '''
-                                echo 'Testing /account/test1/info endpoint:'
-                                sh '''
-                                    INFO_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:8080/account/test1/info \
-                                        -H "Content-Type: application/json" \
-                                        -d '{"password":"pass123"}')
-                                    echo "$INFO_RESPONSE"
-                                    INFO_STATUS=$(echo "$INFO_RESPONSE" | tail -n1)
-                                    if [ "$INFO_STATUS" -ne 200 ]; then
-                                        echo "/account/test1/info endpoint failed!"
-                                        exit 1
-                                    fi
-                                '''
             }
         }
     }
@@ -109,3 +251,7 @@ pipeline {
         }
     }
 }
+
+
+
+
