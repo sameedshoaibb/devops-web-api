@@ -429,7 +429,58 @@
         comment: "ArgoCD gRPC"
 
     # ========================================
-    # 12. FINAL SETUP SUMMARY
+    # 12. INSTALL TRIVY (VULNERABILITY SCANNER)
+    # ========================================
+    - name: Add Trivy GPG key
+      apt_key:
+        url: https://aquasecurity.github.io/trivy-repo/deb/public.key
+        state: present
+
+    - name: Add Trivy repository
+      apt_repository:
+        repo: "deb https://aquasecurity.github.io/trivy-repo/deb {{ ansible_distribution_release }} main"
+        state: present
+
+    - name: Install Trivy
+      apt:
+        name: trivy
+        state: present
+        update_cache: yes
+
+    - name: Verify Trivy installation
+      shell: trivy version
+      register: trivy_version
+      changed_when: false
+
+    - name: Display Trivy version
+      debug:
+        msg: "Trivy installed: {{ trivy_version.stdout_lines[0] }}"
+
+    # ========================================
+    # 13. INSTALL SYFT (SBOM GENERATOR)
+    # ========================================
+    - name: Download Syft installation script
+      get_url:
+        url: https://raw.githubusercontent.com/anchore/syft/main/install.sh
+        dest: /tmp/install_syft.sh
+        mode: '0700'
+
+    - name: Install Syft
+      shell: /tmp/install_syft.sh -b /usr/local/bin
+      args:
+        creates: /usr/local/bin/syft
+
+    - name: Verify Syft installation
+      shell: syft version
+      register: syft_version
+      changed_when: false
+
+    - name: Display Syft version
+      debug:
+        msg: "Syft installed: {{ syft_version.stdout_lines[0] }}"
+
+    # ========================================
+    # 15. FINAL SETUP SUMMARY
     # ========================================
     - name: Final setup summary
       debug:
@@ -449,6 +500,8 @@
           ✓ NGINX test container running on port 8888
           ✓ Kubernetes cluster initialized
           ✓ ArgoCD installed and configured
+          ✓ Trivy installed (vulnerability scanner)
+          ✓ Syft installed (SBOM generator)
           ========================================
 
           Access Information:
@@ -457,9 +510,15 @@
           - ArgoCD Admin Password: {{ argocd_password.stdout | default('Check manually with: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d') }}
           - NGINX Test: http://{{ ansible_host }}:8888
 
+          Security Scanning Tools:
+          - Trivy: Container and dependency vulnerability scanner
+          - Syft: SBOM (Software Bill of Materials) generator
+
           Next Steps:
           1. Access ArgoCD at http://{{ ansible_host }}:30080
           2. Login with username 'admin' and the password shown above
           3. Create your first ArgoCD application
           4. Set up GitOps repository for continuous deployment
+          5. Use Trivy for vulnerability scanning: trivy image <image-name>
+          6. Generate SBOM with Syft: syft <image-name>
           ========================================
