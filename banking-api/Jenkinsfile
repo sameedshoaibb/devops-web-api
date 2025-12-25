@@ -202,8 +202,8 @@ pipeline {
                     echo "UPDATING HELM VALUES WITH IMAGE TAG"
                     echo "=========================================="
                     
-                    # Update production values only
-                    sed -i "s/imageTag: .*/imageTag: ${IMAGE_TAG}/" banking-api/helm/values.prod.yaml
+                    # Update app imageTag only (not nginx)
+                    sed -i "/^app:/,/^[a-z]/ s/imageTag: .*/imageTag: ${IMAGE_TAG}/" banking-api/helm/values.prod.yaml
                     
                     echo "Production: banking-api/helm/values.prod.yaml"
                     grep "imageTag:" banking-api/helm/values.prod.yaml
