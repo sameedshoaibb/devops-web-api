@@ -14,7 +14,7 @@ app:
 
 nginx:
   image: nginx
-  imageTag: "1.26.1-alpine"
+  imageTag: v1.0.2
   imagePullPolicy: IfNotPresent
   resources:
     requests:
