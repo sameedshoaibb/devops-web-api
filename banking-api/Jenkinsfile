@@ -29,9 +29,6 @@ pipeline {
             }
         }
 
-        /* =====================================================
-           LOOP PREVENTION — DO NOT CHANGE ANY OTHER LOGIC
-           ===================================================== */
         stage('Abort if Jenkins Bot Commit') {
             steps {
                 script {
@@ -92,111 +89,111 @@ pipeline {
             }
         }
 
-        // stage('SonarCloud Code Quality Scan') {
-        //     steps {
-        //         withCredentials([usernamePassword(credentialsId: 'devops-web-token', usernameVariable: 'SONAR_USER', passwordVariable: 'SONAR_TOKEN')]) {
-        //             sh '''
-        //                 sudo sonar-scanner \
-        //                     -Dsonar.projectKey=sameedshoaibb_devops-web-api \
-        //                     -Dsonar.organization=sameedshoaibb \
-        //                     -Dsonar.sources=. \
-        //                     -Dsonar.host.url=https://sonarcloud.io \
-        //                     -Dsonar.login=$SONAR_TOKEN \
-        //                     -Dsonar.analysis.mode=publish
-        //             '''
-        //         }
-        //     }
-        // }
+        stage('SonarCloud Code Quality Scan') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'devops-web-token', usernameVariable: 'SONAR_USER', passwordVariable: 'SONAR_TOKEN')]) {
+                    sh '''
+                        sudo sonar-scanner \
+                            -Dsonar.projectKey=sameedshoaibb_devops-web-api \
+                            -Dsonar.organization=sameedshoaibb \
+                            -Dsonar.sources=. \
+                            -Dsonar.host.url=https://sonarcloud.io \
+                            -Dsonar.login=$SONAR_TOKEN \
+                            -Dsonar.analysis.mode=publish
+                    '''
+                }
+            }
+        }
 
-        // stage('Test Health Endpoint') {
-        //     steps {
-        //         sh "docker rm -f banking-api-test || true"
-        //         sh "docker run -d --name banking-api-test -p 4000:4000 ${IMAGE_NAME}:${IMAGE_TAG}"
-        //         sh "sleep 5"
-        //         sh "curl -f http://localhost:4000/health || exit 1"
-        //         sh "docker stop banking-api-test && docker rm banking-api-test"
-        //     }
-        // }
+        stage('Test Health Endpoint') {
+            steps {
+                sh "docker rm -f banking-api-test || true"
+                sh "docker run -d --name banking-api-test -p 4000:4000 ${IMAGE_NAME}:${IMAGE_TAG}"
+                sh "sleep 5"
+                sh "curl -f http://localhost:4000/health || exit 1"
+                sh "docker stop banking-api-test && docker rm banking-api-test"
+            }
+        }
 
-        // stage('Scan with Trivy') {
-        //     steps {
-        //         sh '''
-        //             mkdir -p security-reports
+        stage('Scan with Trivy') {
+            steps {
+                sh '''
+                    mkdir -p security-reports
                     
-        //             echo "=========================================="
-        //             echo "1. TRIVY IMAGE SCAN"
-        //             echo "=========================================="
-        //             trivy image --severity HIGH,CRITICAL \
-        //                 --format json --output security-reports/trivy-image-report.json \
-        //                 --format table ${IMAGE_NAME}:${IMAGE_TAG} | tee security-reports/trivy-image-report.txt
+                    echo "=========================================="
+                    echo "1. TRIVY IMAGE SCAN"
+                    echo "=========================================="
+                    trivy image --severity HIGH,CRITICAL \
+                        --format json --output security-reports/trivy-image-report.json \
+                        --format table ${IMAGE_NAME}:${IMAGE_TAG} | tee security-reports/trivy-image-report.txt
                     
-        //             cat security-reports/trivy-image-report.txt
-        //             echo "=========================================="
+                    cat security-reports/trivy-image-report.txt
+                    echo "=========================================="
                     
-        //             echo ""
-        //             echo "=========================================="
-        //             echo "2. TRIVY FILESYSTEM SCAN"
-        //             echo "=========================================="
-        //             trivy fs --severity HIGH,CRITICAL \
-        //                 --format json --output security-reports/trivy-fs-report.json \
-        //                 --format table . | tee security-reports/trivy-fs-report.txt
+                    echo ""
+                    echo "=========================================="
+                    echo "2. TRIVY FILESYSTEM SCAN"
+                    echo "=========================================="
+                    trivy fs --severity HIGH,CRITICAL \
+                        --format json --output security-reports/trivy-fs-report.json \
+                        --format table . | tee security-reports/trivy-fs-report.txt
                     
-        //             cat security-reports/trivy-fs-report.txt
-        //             echo "=========================================="
+                    cat security-reports/trivy-fs-report.txt
+                    echo "=========================================="
                     
-        //             echo ""
-        //             echo "=========================================="
-        //             echo "3. TRIVY CONFIG SCAN (Kubernetes & Cloud)"
-        //             echo "=========================================="
-        //             trivy config --severity HIGH,CRITICAL \
-        //                 --format json --output security-reports/trivy-config-report.json \
-        //                 --format table banking-api/helm 2>/dev/null | tee security-reports/trivy-config-report.txt || echo "No config files found or scan skipped"
+                    echo ""
+                    echo "=========================================="
+                    echo "3. TRIVY CONFIG SCAN (Kubernetes & Cloud)"
+                    echo "=========================================="
+                    trivy config --severity HIGH,CRITICAL \
+                        --format json --output security-reports/trivy-config-report.json \
+                        --format table banking-api/helm 2>/dev/null | tee security-reports/trivy-config-report.txt || echo "No config files found or scan skipped"
                     
-        //             echo "=========================================="
-        //         '''
-        //     }
-        // }
+                    echo "=========================================="
+                '''
+            }
+        }
 
-        // stage('Generate SBOM') {
-        //     steps {
-        //         sh '''
-        //             syft ${IMAGE_NAME}:${IMAGE_TAG} --output json > security-reports/sbom-syft.json
-        //             syft ${IMAGE_NAME}:${IMAGE_TAG} --output cyclonedx-json > security-reports/sbom-cyclonedx.json
-        //             syft ${IMAGE_NAME}:${IMAGE_TAG} --output table > security-reports/sbom-report.txt
+        stage('Generate SBOM') {
+            steps {
+                sh '''
+                    syft ${IMAGE_NAME}:${IMAGE_TAG} --output json > security-reports/sbom-syft.json
+                    syft ${IMAGE_NAME}:${IMAGE_TAG} --output cyclonedx-json > security-reports/sbom-cyclonedx.json
+                    syft ${IMAGE_NAME}:${IMAGE_TAG} --output table > security-reports/sbom-report.txt
                     
-        //             echo "=========================================="
-        //             echo "SOFTWARE BILL OF MATERIALS (SBOM)"
-        //             echo "=========================================="
-        //             cat security-reports/sbom-report.txt
-        //             echo "=========================================="
-        //         '''
-        //     }
-        // }
+                    echo "=========================================="
+                    echo "SOFTWARE BILL OF MATERIALS (SBOM)"
+                    echo "=========================================="
+                    cat security-reports/sbom-report.txt
+                    echo "=========================================="
+                '''
+            }
+        }
 
-        // stage('Scan Dependencies') {
-        //     steps {
-        //         sh '''
-        //             echo "=========================================="
-        //             echo "DEPENDENCY VULNERABILITY SCAN"
-        //             echo "=========================================="
+        stage('Scan Dependencies') {
+            steps {
+                sh '''
+                    echo "=========================================="
+                    echo "DEPENDENCY VULNERABILITY SCAN"
+                    echo "=========================================="
                     
-        //             # Scan package.json for npm vulnerabilities
-        //             if [ -f "banking-api/package.json" ]; then
-        //                 echo "Checking npm dependencies..."
-        //                 cd banking-api
-        //                 npm audit --json > ../security-reports/npm-audit.json 2>/dev/null || true
-        //                 npm audit --audit-level=moderate 2>&1 | tee ../security-reports/npm-audit.txt || true
-        //                 cd ..
+                    # Scan package.json for npm vulnerabilities
+                    if [ -f "banking-api/package.json" ]; then
+                        echo "Checking npm dependencies..."
+                        cd banking-api
+                        npm audit --json > ../security-reports/npm-audit.json 2>/dev/null || true
+                        npm audit --audit-level=moderate 2>&1 | tee ../security-reports/npm-audit.txt || true
+                        cd ..
                         
-        //                 echo "=========================================="
-        //                 echo "NPM AUDIT REPORT"
-        //                 echo "=========================================="
-        //                 cat security-reports/npm-audit.txt
-        //                 echo "=========================================="
-        //             fi
-        //         '''
-        //     }
-        // }
+                        echo "=========================================="
+                        echo "NPM AUDIT REPORT"
+                        echo "=========================================="
+                        cat security-reports/npm-audit.txt
+                        echo "=========================================="
+                    fi
+                '''
+            }
+        }
 
         stage('Update Helm Values') {
             steps {
