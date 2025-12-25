@@ -11,7 +11,7 @@ pipeline {
         IMAGE_NAME = 'sameedshoaib1/banking-api'
 <<<<<<< HEAD
 =======
-        IMAGE_TAG = 'v1.0.29'
+        IMAGE_TAG = 'v1.0.1'
 >>>>>>> 6c64e60a82adffc3a8269fac095802fe8abbffe2
         REPO_URL = 'https://github.com/sameedshoaibb/devops-web-api.git'
     }
@@ -73,7 +73,7 @@ pipeline {
                     '''
                     
                     // Read the new version directly
-                    env.IMAGE_TAG = sh(script: 'cat VERSION', returnStdout: true).trim()
+                    env.IMAGE_TAG = 'v1.0.1'
                     echo "IMAGE_TAG set to: ${env.IMAGE_TAG}"
                 }
             }
@@ -236,7 +236,7 @@ pipeline {
                             git add banking-api/helm/values.prod.yaml
                             
                             # Also update Jenkinsfile with new IMAGE_TAG
-                            sed -i "s/IMAGE_TAG = .*/IMAGE_TAG = '${IMAGE_TAG}'/" banking-api/Jenkinsfile
+                            sed -i "s/IMAGE_TAG = 'v1.0.1'
                             git add banking-api/Jenkinsfile
                             
                             git commit -m "Update Helm values and image tag to ${IMAGE_TAG}"
