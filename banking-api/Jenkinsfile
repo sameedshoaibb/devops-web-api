@@ -9,10 +9,6 @@ pipeline {
 
     environment {
         IMAGE_NAME = 'sameedshoaib1/banking-api'
-<<<<<<< HEAD
-=======
-        IMAGE_TAG = 'v1.0.29'
->>>>>>> 6c64e60a82adffc3a8269fac095802fe8abbffe2
         REPO_URL = 'https://github.com/sameedshoaibb/devops-web-api.git'
     }
 
@@ -59,20 +55,29 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        # Read current version from VERSION file
-                        CURRENT_VERSION=$(cat VERSION 2>/dev/null || echo "v1.0.0")
-                        echo "Current version: $CURRENT_VERSION"
+                        # Get latest tag from Docker Hub
+                        echo "Fetching latest version from Docker Hub..."
+                        LATEST_TAG=$(curl -s https://registry.hub.docker.com/v2/repositories/sameedshoaib1/banking-api/tags/ | grep -o '"name":"[^"]*"' | head -1 | cut -d'"' -f4)
                         
-                        # Simple way: split by dots and increment last number
+                        # If no tag found, use default
+                        if [ -z "$LATEST_TAG" ]; then
+                            CURRENT_VERSION="v1.0.0"
+                        else
+                            CURRENT_VERSION="$LATEST_TAG"
+                        fi
+                        
+                        echo "Current version from Docker Hub: $CURRENT_VERSION"
+                        
+                        # Increment patch version
                         # v1.0.2 becomes v1.0.3
                         NEW_VERSION=$(echo $CURRENT_VERSION | awk -F. '{print $1"."$2"."$3+1}')
                         echo "New version: $NEW_VERSION"
                         
-                        # Save to file
+                        # Save new version
                         echo "$NEW_VERSION" > VERSION
                     '''
                     
-                    // Read the new version directly
+                    // Read the new version
                     env.IMAGE_TAG = sh(script: 'cat VERSION', returnStdout: true).trim()
                     echo "IMAGE_TAG set to: ${env.IMAGE_TAG}"
                 }
