@@ -1,5 +1,5 @@
 resource "azurerm_public_ip" "vm_pip" {
-  name                = "web-vm-pip"
+  name                = "infra-vm-pip"
   location            = var.location
   resource_group_name = var.rg_name
   allocation_method   = "Static"
@@ -8,12 +8,12 @@ resource "azurerm_public_ip" "vm_pip" {
 
 # Network Interface
 resource "azurerm_network_interface" "vm_nic" {
-  name                = "web-vm-nic"
+  name                = "infra-vm-nic"
   location            = var.location
   resource_group_name = var.rg_name
 
   ip_configuration {
-    name                          = "web-ipconfig"
+    name                          = "infra-ipconfig"
     subnet_id                     = var.subnet_id
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.vm_pip.id
@@ -87,7 +87,7 @@ resource "azurerm_network_security_group" "nsg" {
     destination_port_range      = "8080"
     source_address_prefixes     = ["192.30.252.0/22", "185.199.108.0/22", "140.82.112.0/20", "143.55.64.0/20"]
     destination_address_prefix  = "*"
-    description                 = "GitHub webhooks"
+    description                 = "GitHub infrahooks"
   }
 }
 
@@ -100,11 +100,17 @@ resource "azurerm_linux_virtual_machine" "vm" {
   name                            = var.vm_name
   resource_group_name             = var.rg_name
   location                        = var.location
-  size                            = "Standard_B1s"
+  size                            = "Standard_D4ls_v5"
   disable_password_authentication = false
   admin_username                  = var.admin_username
   admin_password                  = var.admin_password
   network_interface_ids           = [azurerm_network_interface.vm_nic.id]
+
+  timeouts {
+    create = "30m"
+    update = "30m"
+    delete = "10m"
+  }
 
   os_disk {
     caching              = "ReadWrite"

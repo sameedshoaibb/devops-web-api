@@ -1,12 +1,12 @@
-# Care Banking API - OnCare DevOps Platform
+# Care Banking API - DevOps Platform
 
 ## Purpose
 
-This is a complete DevOps solution that automates building, testing, and deploying a Banking API application to a single-node Kubernetes cluster. It implements GitOps principles for automatic, secure, and reliable deployments using a minimal infrastructure setup. The platform supports multiple environments (development, staging, and production), with production environment currently set up and operational.
+This is a complete DevOps solution that automates building, testing, and deploying a Banking API application to a single-node Kubernetes cluster. It implements **GitOps principles** for automatic, secure, and reliable deployments using a minimal infrastructure setup. The platform supports multiple environments (development, staging, and production), with production environment currently set up and operational.
 
 ## What's Inside
 
-### Platform Folder
+### 01- Platform Folder
 Sets up and manages the entire infrastructure needed to run applications on Kubernetes.
 
 What it contains:
@@ -16,7 +16,7 @@ What it contains:
 
 What it does: Terraform creates the cloud infrastructure, then Ansible configures it with all DevOps tools.
 
-### Care-Banking-Api Folder
+### 02- Care-Banking-Api Folder
 The actual Banking API application that gets built and deployed.
 
 What it contains:
@@ -30,12 +30,15 @@ What it contains:
 
 What it does: Everything related to the application itself including code, builds, tests, and deployment configuration.
 
-## How It Works (Simple Version)
+## Project Workflow
 
-1. Developer pushes code to GitHub
-2. Jenkins automatically builds Docker image, runs security tests, pushes to Docker Hub, and updates deployment configuration
-3. ArgoCD automatically detects configuration changes in GitHub and deploys new version to Kubernetes
-4. App is live in about 5 minutes with zero manual work needed
+1. **Developer pushes code to GitHub** - Push changes to the repository
+2. **GitHub triggers Jenkins pipeline via webhook** - Automatic trigger on code push
+3. **DevSecOps pipeline executes** - Builds Docker image, runs security tests, pushes to Docker Hub, updates deployment config
+4. **ArgoCD detects configuration changes** - Automatically syncs to Kubernetes cluster
+5. **App is live in ~5 minutes** - Zero manual work, fully automated
+
+**For detailed pipeline steps and configuration**, see the README files in `platform/` and `care-banking-api/` folders.
 
 ## Key Technologies
 
@@ -57,7 +60,7 @@ What it does: Everything related to the application itself including code, build
 
 ### Step 1: Terraform (Already Done ✅)
 The Azure infrastructure has been deployed with Terraform. You now have:
-- Ubuntu VM running in Azure (UK South region)
+- Ubuntu VM running in Azure (UK West region)
 - Virtual network with security rules configured
 - Static public IP assigned to the VM
 - Monitoring enabled for CPU alerts

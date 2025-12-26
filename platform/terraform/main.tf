@@ -21,12 +21,3 @@ module "vm" {
   admin_username       = var.admin_username
   admin_password       = var.admin_password
 }
-
-module "monitoring" {
-  source      = "./modules/azure-monitoring"
-  prefix      = "webapp"
-  location    = var.location
-  rg_name     = module.resource_group.rg_name
-  vm_id       = module.vm.vm_id
-  alert_email = "sameed@gmail.com"
-}

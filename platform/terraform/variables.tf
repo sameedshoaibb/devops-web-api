@@ -12,13 +12,13 @@ variable "rg_name" {
 variable "location" {
   description = "Azure region for all resources"
   type        = string
-  default     = "UK South"
+  default     = "UK West"
 }
 
 variable "vnet_name" {
   description = "Name of the Virtual Network"
   type        = string
-  default     = "devops-vnet-prod"
+  default     = "infra-vnet-prod"
 }
 
 variable "infra_cidr" {
