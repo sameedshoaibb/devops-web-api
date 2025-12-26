@@ -10,23 +10,23 @@ This is a complete DevOps solution that automates building, testing, and deployi
 Sets up and manages the entire infrastructure needed to run applications on Kubernetes.
 
 What it contains:
-- Ansible - Automated server setup scripts that install Docker, Kubernetes, Jenkins, and ArgoCD. Configures infrastructure and security. Sets up all required tools and services in one go.
+- **Terraform** - Infrastructure as Code for Azure. Creates a virtual machine with networking and security configured. Already deployed and ready to use.
   
-- Terraform - Infrastructure as Code for cloud resources. Currently empty, but ready for future cloud infrastructure definitions. Provisions cloud resources like VMs, networks, and storage.
+- **Ansible** - Automated server configuration scripts that install Docker, Kubernetes, Jenkins, and ArgoCD on the Terraform-created VM. Configures infrastructure and security. Runs once on the VM to set up all required tools.
 
-What it does: Everything needed to prepare your infrastructure. Run this once to set up your platform and you're ready to deploy applications.
+What it does: Terraform creates the cloud infrastructure, then Ansible configures it with all DevOps tools.
 
 ### Care-Banking-Api Folder
 The actual Banking API application that gets built and deployed.
 
 What it contains:
-- Source code - Node.js/TypeScript banking API with 6 endpoints for account management, user and admin routes.
+- **Source code** - Node.js/TypeScript banking API with 6 endpoints for account management, user and admin routes.
   
-- Helm charts - Kubernetes deployment configuration with environment-specific values for dev, staging, and production. The platform architecture supports all three environments, with production currently active. Development and staging environments are configured and ready for future setup. Contains Kubernetes templates for pods, services, storage, security, and more.
+- **Helm charts** - Kubernetes deployment configuration with environment-specific values for dev, staging, and production. The platform architecture supports all three environments, with production currently active. Development and staging environments are configured and ready for future setup. Contains Kubernetes templates for pods, services, storage, security, and more.
   
-- Dockerfile - Container image definition with multi-stage build for optimized images, security hardening with non-root user, and built-in health checks.
+- **Dockerfile** - Container image definition with multi-stage build for optimized images, security hardening with non-root user, and built-in health checks.
   
-- Jenkinsfile - CI/CD pipeline definition that automatically builds, tests, and deploys on every code change. Runs security scans, pushes to Docker Hub, and updates Kubernetes configuration.
+- **Jenkinsfile** - CI/CD pipeline definition that automatically builds, tests, and deploys on every code change. Runs security scans, pushes to Docker Hub, and updates Kubernetes configuration.
 
 What it does: Everything related to the application itself including code, builds, tests, and deployment configuration.
 
@@ -39,29 +39,73 @@ What it does: Everything related to the application itself including code, build
 
 ## Key Technologies
 
-1. Ansible - Used to automate infrastructure setup and install all required tools on a single Kubernetes node.
+1. **Terraform** - Creates cloud infrastructure on Azure (VM, network, security, monitoring).
 
-2. Terraform - Infrastructure as Code for cloud resources. Currently empty, but ready for future cloud infrastructure definitions.
+2. **Ansible** - Configures the Terraform-created VM with Docker, Kubernetes, Jenkins, and ArgoCD.
 
-3. Docker - Creates container images for the application with multi-stage builds and security hardening.
+3. **Docker** - Creates container images for the application with multi-stage builds and security hardening.
 
-4. Helm - Provides Kubernetes deployment templates optimized for single-node setup with environment-specific configurations.
+4. **Kubernetes** - Runs as a single-node cluster on the VM, suitable for development and testing environments.
 
-5. Jenkins - Handles CI/CD automation to build, test, and deploy code on every change with security scans.
+5. **Helm** - Provides Kubernetes deployment templates optimized for single-node setup with environment-specific configurations.
 
-6. ArgoCD - Manages continuous deployment using GitOps principles to automatically sync Git state with Kubernetes.
+6. **Jenkins** - Handles CI/CD automation to build, test, and deploy code on every change with security scans.
 
-7. Kubernetes - Runs as a single-node cluster, suitable for development and testing environments.
+7. **ArgoCD** - Manages continuous deployment using GitOps principles to automatically sync Git state with Kubernetes.
 
 ## Getting Started
 
-Setup Infrastructure (one-time only):
-Navigate to the platform/ansible folder, edit the inventory.ini file with your server details, and run the setup playbook. This installs everything you need.
+### Step 1: Terraform (Already Done ✅)
+The Azure infrastructure has been deployed with Terraform. You now have:
+- Ubuntu VM running in Azure (UK South region)
+- Virtual network with security rules configured
+- Static public IP assigned to the VM
+- Monitoring enabled for CPU alerts
 
-Deploy Application (automatic after initial setup):
-Navigate to care-banking-api folder, make your changes, push to GitHub. Jenkins and ArgoCD handle all the building, testing, and deployment automatically.
+**For detailed instructions:** See `platform/terraform/README.md`
+
+### Step 2: Configure Ansible
+Edit `platform/ansible/inventory.ini` with your Terraform VM details:
+- VM public IP address (from terraform output)
+- Admin username and password
+- SSH key path (if using key-based authentication)
+
+### Step 3: Run Ansible Playbook
+From the `platform/ansible` folder, run:
+```bash
+ansible-playbook -i inventory.ini setup.yml
+```
+
+This will automatically install and configure on the VM:
+- Docker container runtime
+- Kubernetes single-node cluster
+- Jenkins CI/CD server
+- Helm package manager
+- ArgoCD GitOps platform
+- UFW firewall with proper rules
+
+Takes about 10-15 minutes to complete.
+
+**For detailed instructions:** See `platform/ansible/README.md`
+
+### Step 4: Deploy the Banking API
+Once Ansible finishes, the Jenkins and ArgoCD will be running on your VM. Push code changes to GitHub and they will automatically build and deploy via the CI/CD pipeline.
+
+**For detailed instructions:** See `care-banking-api/README.md`
+
+## Detailed Documentation
+
+Each folder contains its own README with complete details:
+
+- **platform/terraform/README.md** - Infrastructure setup, Azure credentials, deployment commands, and troubleshooting
+- **platform/ansible/README.md** - What gets installed, configuration options, playbook structure, and verification steps
+- **care-banking-api/README.md** - Application endpoints, deployment guide, API testing examples, and development tips
+
+Start with these README files for in-depth information about each component.
 
 ## Project Structure
+
+Read in this order: Terraform → Ansible → Care-Banking-Api
 
 ```
 oncare-devops-task/
@@ -69,20 +113,37 @@ oncare-devops-task/
 ├── banking.md
 │
 ├── platform/
-│   ├── ansible/
-│   │   ├── ansible.cfg
-│   │   ├── inventory.ini
-│   │   ├── setup.yml
-│   │   ├── requirements.yml
-│   │   ├── group_vars/
-│   │   │   └── all.yml
-│   │   ├── scripts/
-│   │   ├── README.md
-│   │   └── ARGOCD.md
-│   └── terraform/
+│   ├── terraform/                    ← Start here: Creates cloud infrastructure
+│   │   ├── README.md                 (See setup instructions)
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   ├── secrets.tfvars
+│   │   └── modules/
+│   │       ├── azure-resource-group/
+│   │       ├── azure-vnet/
+│   │       ├── azure-vm/
+│   │       └── azure-monitoring/
+│   │
+│   └── ansible/                      ← Then here: Configures the VM
+│       ├── README.md                 (See configuration instructions)
+│       ├── ansible.cfg
+│       ├── inventory.ini
+│       ├── setup.yml
+│       ├── requirements.yml
+│       ├── group_vars/
+│       │   └── all.yml
+│       ├── scripts/
+│       ├── ARGOCD.md
+│       └── CLEANUP_SUMMARY.md
 │
-└── care-banking-api/
-    ├── src/
+└── care-banking-api/                 ← Finally: Deploy your application
+    ├── README.md
+    ├── Jenkinsfile                   (CI/CD pipeline)
+    ├── Dockerfile                    (Container image)
+    ├── deploy.sh
+    ├── start.sh
+    │
+    ├── src/                          (Node.js/TypeScript source code)
     │   ├── index.ts
     │   ├── app.ts
     │   ├── config.ts
@@ -90,7 +151,7 @@ oncare-devops-task/
     │   ├── adminRoutes.ts
     │   └── userRoutes.ts
     │
-    ├── helm/
+    ├── helm/                         (Kubernetes deployment configs)
     │   ├── Chart.yaml
     │   ├── README.md
     │   ├── values.yaml
@@ -126,15 +187,10 @@ oncare-devops-task/
     │       └── tests/
     │           └── test-connection.yaml
     │
-    ├── Dockerfile
-    ├── Jenkinsfile
-    ├── deploy.sh
-    ├── start.sh
     ├── package.json
     ├── pnpm-lock.yaml
     ├── tsconfig.json
     ├── config.json
-    ├── README.md
     ├── .dockerignore
     ├── .gitignore
     ├── .prettierrc.yaml
