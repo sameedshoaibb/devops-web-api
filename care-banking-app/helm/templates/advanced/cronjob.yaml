@@ -43,7 +43,7 @@ spec:
               - name: API_KEY
                 valueFrom:
                   secretKeyRef:
-                    name: banking-api-key
+                    name: care-banking-app-key
                     key: adminApiKey
               - name: THRESHOLD
                 value: {{ .Values.cronjob.threshold | default "10000" | quote }}

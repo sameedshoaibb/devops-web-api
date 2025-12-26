@@ -50,11 +50,6 @@ spec:
               mountPath: /mnt/config-template
             - name: app-config
               mountPath: /config
-            # - name: persistent-data
-            #   mountPath: /data  
-            # - name: data-file
-            #   mountPath: /data/dat.txt
-            #   subPath: dat.txt
       containers:
         - name: care-banking-app
           image: {{ .Values.app.image }}:{{ .Values.app.imageTag }}
@@ -106,11 +101,6 @@ spec:
               mountPath: /mnt/config-template
             - name: app-config
               mountPath: /config
-            - name: persistent-data
-              mountPath: /data  
-            - name: data-file
-              mountPath: /data/data.txt
-              subPath: data.txt
 
         - name: nginx-proxy
           image: {{ .Values.nginx.image }}:{{ .Values.nginx.imageTag }}
@@ -155,13 +145,6 @@ spec:
             defaultMode: 0444
         - name: app-config
           emptyDir: {}
-        - name: persistent-data
-          persistentVolumeClaim:
-            claimName: {{ .Values.app.name }}-pvc
-        - name: data-file
-          configMap:
-            name: {{ .Values.app.name }}-data-file
-            defaultMode: 0444
         - name: nginx-config
           configMap:
             name: {{ .Values.app.name }}-nginx
