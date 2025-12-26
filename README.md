@@ -10,7 +10,7 @@ This is a complete DevOps solution that automates building, testing, and deployi
 Sets up and manages the entire infrastructure needed to run applications on Kubernetes.
 
 What it contains:
-- **Terraform** - Infrastructure as Code for Azure. Creates a virtual machine with networking and security configured. Already deployed and ready to use.
+- **Terraform** - Infrastructure as Code for Azure. Creates a virtual machine with networking and security configured.
   
 - **Ansible** - Automated server configuration scripts that install Docker, Kubernetes, Jenkins, and ArgoCD on the Terraform-created VM. Configures infrastructure and security. Runs once on the VM to set up all required tools.
 
@@ -68,20 +68,18 @@ What it does: Everything related to the application itself including code, build
 
 ## Getting Started
 
-### Step 1: Terraform (Already Done)
-The Azure infrastructure has been deployed with Terraform. You now have:
+### Step 1: Terraform
+The Azure infrastructure will be deployed with Terraform. You should have:
 - Ubuntu VM running in Azure (UK West region)
 - Virtual network with security rules configured
-- Static public IP assigned to the VM
-- Monitoring enabled for CPU alerts
+- Static public IP assigned to the VM binding to my Dedicated to my home IP
 
 **For detailed instructions:** See `platform/terraform/README.md`
 
 ### Step 2: Configure Ansible
-Edit `platform/ansible/inventory.ini` with your Terraform VM details:
+Edit `platform/ansible/inventory.ini` with your Terraform VM Public IP:
 - VM public IP address (from terraform output)
-- Admin username and password
-- SSH key path (if using key-based authentication)
+- SSH key path
 
 ### Step 3: Run Ansible Playbook
 From the `platform/ansible` folder, run:
@@ -90,19 +88,25 @@ ansible-playbook -i inventory.ini setup.yml
 ```
 
 This will automatically install and configure on the VM:
+- Harden VM with non-root user having sudo priviliges
 - Docker container runtime
-- Kubernetes single-node cluster
+- Kubernetes single-node cluster via kubeadm
 - Jenkins CI/CD server
 - Helm package manager
 - ArgoCD GitOps platform
-- UFW firewall with proper rules
+- UFW firewall 
 
 Takes about 10-15 minutes to complete.
 
 **For detailed instructions:** See `platform/ansible/README.md`
 
 ### Step 4: Deploy the Banking App
-Once Ansible finishes, the Jenkins and ArgoCD will be running on your VM. Push code changes to GitHub and they will automatically build and deploy via the CI/CD pipeline.
+Once Ansible finishes, the Jenkins and ArgoCD will be running on your VM. Before you can complete the automated flow, ensure all **Prerequisites (One-time Setup)** from the "Project Workflow" section are configured:
+- Docker Hub account and credentials in Jenkins
+- GitHub webhook for Jenkins
+- ArgoCD linked to your Git repository and Kubernetes cluster
+
+Once prerequisites are set up, push code changes to GitHub and they will automatically build and deploy via the CI/CD pipeline.
 
 **For detailed instructions:** See `care-banking-app/README.md`
 
