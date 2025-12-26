@@ -3,25 +3,7 @@
 ## Build Process
 
 ### Overview
-Started with building the Docker image from the source code. During the build process, several issues were identified and addressed to optimize the container image.
-
-### Problems Identified & Solutions
-
-1. **Base Image Optimization** - Using `node:20.19.6-alpine` for reproducible, secure, and stable builds
-2. **Offline Install Issue** - `pnpm install --offline` requires full store (bad practice); resolved in build stages
-3. **File Selection** - Now copying only specific files required for the project
-4. **Build vs Runtime** - Separated build and run stages with appropriate base images
-5. **Dev Dependencies** - Used `pnpm prune --prod` to remove development dependencies from final image
-6. **Security** - Changed from root user to unprivileged `appuser`
-7. **Layer Optimization** - Reduced unnecessary layers for faster build times
-8. **Dependency Caching** - Multiple copy commands cache dependencies independently
-9. **Build Context** - Added `.dockerignore` to reduce build context
-
-### Image Statistics
-
-- **Before**: ~300MB
-- **After**: ~201MB (25% smaller)
-- **Base**: `node:20.19.6-alpine`
+Started with building the Docker image from the source code. 
 
 ### Testing
 
@@ -42,13 +24,13 @@ docker exec -it <container_id> /bin/sh
 
 ## Deployment Script
 
-The `deploy.sh` in the `scripts/deploy` folder now supports:
+The `deploy.sh` now supports:
 - Multiple environments: dev, staging, production
 - Enhanced testing and verification capabilities
 
 ---
 
-## Design Improvements
+## Design Features
 
 ### Dockerfile Optimizations
 
@@ -62,12 +44,6 @@ The `deploy.sh` in the `scripts/deploy` folder now supports:
 - **Optimized build context** - `.dockerignore` excludes unnecessary files
 
 ---
-
-## Configuration Management
-
-**Current Approach**: Using existing config file for the secrets since the application code doesn't support environment variables.
-
-**Recommendation**: Implement environment variable support in the application code for better cloud-native practices. Application code needs to be modified therefore I didn't tried.
 
 ---
 
@@ -241,7 +217,6 @@ kubectl exec -n care-banking-app deploy/care-banking-app -c nginx-proxy -- tail 
 [SLOW_REQUEST] [25/Dec/2025:16:43:39 +0000] Remote: 127.0.0.1 | Request: POST /account/test1/deposit HTTP/1.1 | Status: 200 | Time: 0.002 s
 [SLOW_REQUEST] [25/Dec/2025:16:43:40 +0000] Remote: 127.0.0.1 | Request: POST /account/test1/withdraw HTTP/1.1 | Status: 200 | Time: 0.002 s
 [SLOW_REQUEST] [25/Dec/2025:16:43:42 +0000] Remote: 127.0.0.1 | Request: POST /account/test1/withdraw HTTP/1.1 | Status: 200 | Time: 0.002 s
-[SLOW_REQUEST] [25/Dec/2025:16:43:47 +0000] Remote: 127.0.0.1 | Request: GET /admin/accounts HTTP/1.1 | Status: 200 | Time: 0.002 s
 ```
 
 ### 2. CronJob - Balance Check Status
