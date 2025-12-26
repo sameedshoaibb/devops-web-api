@@ -1,6 +1,6 @@
 ---
-# Simple Infrastructure Setup Playbook
-# Installs Docker, Kubernetes, Helm, Jenkins, and configures Ubuntu server
+# Infrastructure Setup Playbook
+# Installs: Docker, Kubernetes, Helm, Jenkins, ArgoCD, Trivy, Syft
 
 - name: Setup Infrastructure
   hosts: all
@@ -9,9 +9,9 @@
 
   tasks:
     # ========================================
-    # 1. SYSTEM UPDATE
+    # System Preparation
     # ========================================
-    - name: Update apt cache and upgrade packages
+    - name: Update system packages
       apt:
         update_cache: yes
         upgrade: dist
@@ -29,9 +29,9 @@
         state: present
 
     # ========================================
-    # 2. CREATE NON-ROOT USER
+    # User Setup
     # ========================================
-    - name: Create devops user
+    - name: Create devops user with sudo access
       user:
         name: "{{ devops_user }}"
         groups: sudo
@@ -39,7 +39,7 @@
         create_home: yes
         state: present
 
-    - name: Add SSH key for devops user
+    - name: Configure SSH key for devops user
       authorized_key:
         user: "{{ devops_user }}"
         key: "{{ ssh_public_key }}"
@@ -54,7 +54,7 @@
         validate: 'visudo -cf %s'
 
     # ========================================
-    # 3. INSTALL DOCKER
+    # Docker Installation
     # ========================================
     - name: Add Docker GPG key
       apt_key:
@@ -68,10 +68,7 @@
 
     - name: Install Docker
       apt:
-        name:
-          - docker-ce
-          - docker-ce-cli
-          - containerd.io
+        name: [docker-ce, docker-ce-cli, containerd.io]
         state: present
         update_cache: yes
 
@@ -80,18 +77,16 @@
         name: "{{ item }}"
         groups: docker
         append: yes
-      loop:
-        - "{{ devops_user }}"
-        - ubuntu
+      loop: ["{{ devops_user }}", ubuntu]
 
-    - name: Start and enable Docker
+    - name: Start Docker service
       systemd:
         name: docker
         state: started
         enabled: yes
 
     # ========================================
-    # 4. INSTALL KUBERNETES TOOLS
+    # Kubernetes Tools
     # ========================================
     - name: Add Kubernetes GPG key
       apt_key:
@@ -106,38 +101,27 @@
 
     - name: Install Kubernetes tools
       apt:
-        name:
-          - kubelet
-          - kubeadm
-          - kubectl
+        name: [kubelet, kubeadm, kubectl]
         state: present
         update_cache: yes
 
-    - name: Hold Kubernetes packages
+    - name: Hold Kubernetes package versions
       dpkg_selections:
         name: "{{ item }}"
         selection: hold
-      loop:
-        - kubelet
-        - kubeadm
-        - kubectl
+      loop: [kubelet, kubeadm, kubectl]
 
     # ========================================
-    # 5. INSTALL HELM
+    # Helm Package Manager
     # ========================================
-    - name: Download Helm install script
-      get_url:
-        url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
-        dest: /tmp/get_helm.sh
-        mode: '0700'
-
     - name: Install Helm
-      shell: /tmp/get_helm.sh
+      shell: |
+        curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
       args:
         creates: /usr/local/bin/helm
 
     # ========================================
-    # 6. INSTALL JENKINS
+    # Jenkins Setup
     # ========================================
     - name: Add Jenkins GPG key
       apt_key:
@@ -149,7 +133,7 @@
         repo: "deb https://pkg.jenkins.io/debian-stable binary/"
         state: present
 
-    - name: Install Java (required for Jenkins)
+    - name: Install Java (Jenkins requirement)
       apt:
         name: openjdk-17-jdk
         state: present
@@ -160,49 +144,40 @@
         name: jenkins
         state: present
 
-    - name: Add jenkins user to docker group
+    - name: Add jenkins to docker group
       user:
         name: jenkins
         groups: docker
         append: yes
 
-    - name: Start and enable Jenkins
+    - name: Start Jenkins service
       systemd:
         name: jenkins
         state: started
         enabled: yes
 
-    - name: Wait for Jenkins to start (port 8080)
+    - name: Wait for Jenkins to be ready
       wait_for:
         port: 8080
-        host: localhost
         timeout: 120
-
-    - name: Check if Jenkins initial password exists
-      stat:
-        path: /var/lib/jenkins/secrets/initialAdminPassword
-      register: jenkins_password_file
 
     - name: Get Jenkins initial password
       slurp:
         src: /var/lib/jenkins/secrets/initialAdminPassword
       register: jenkins_password
-      when: jenkins_password_file.stat.exists
+      ignore_errors: yes
 
-    - name: Display Jenkins password
+    - name: Display Jenkins credentials
       debug:
-        msg: "Jenkins password: {{ jenkins_password['content'] | b64decode }}"
-      when: jenkins_password_file.stat.exists
-
-    - name: Display message if password file not found
-      debug:
-        msg: "Jenkins already configured or password file not found. Check Jenkins UI."
-      when: not jenkins_password_file.stat.exists
+        msg: |
+          Jenkins Password: {{ jenkins_password['content'] | b64decode }}
+          Jenkins URL: http://{{ ansible_host }}:8080
+      when: jenkins_password.content is defined
 
     # ========================================
-    # 6.1 CONFIGURE JENKINS USER PRIVILEGES
+    # Jenkins Kubernetes Access
     # ========================================
-    - name: Enable passwordless sudo for jenkins user
+    - name: Grant jenkins sudo privileges
       lineinfile:
         path: /etc/sudoers.d/jenkins
         line: "jenkins ALL=(ALL) NOPASSWD:ALL"
@@ -210,7 +185,7 @@
         mode: '0440'
         validate: 'visudo -cf %s'
 
-    - name: Create .kube directory for jenkins user
+    - name: Setup kubeconfig for jenkins
       file:
         path: /var/lib/jenkins/.kube
         state: directory
@@ -218,75 +193,50 @@
         group: jenkins
         mode: '0755'
 
-    - name: Copy kubeconfig to jenkins user (if exists)
-      copy:
-        src: /etc/kubernetes/admin.conf
-        dest: /var/lib/jenkins/.kube/config
-        owner: jenkins
-        group: jenkins
-        mode: '0600'
-        remote_src: yes
-      ignore_errors: yes
-
-    - name: Set KUBECONFIG in jenkins profile
-      lineinfile:
-        path: /var/lib/jenkins/.bashrc
-        line: "export KUBECONFIG=/var/lib/jenkins/.kube/config"
-        create: yes
-        owner: jenkins
-        group: jenkins
-
     # ========================================
-    # 7. CONFIGURE FIREWALL (UFW)
+    # Firewall Configuration
     # ========================================
-    - name: Install UFW
+    - name: Install UFW firewall
       apt:
         name: ufw
         state: present
 
-    - name: Allow firewall ports
+    - name: Configure firewall rules
       ufw:
         rule: allow
         port: "{{ item }}"
         proto: tcp
       loop: "{{ firewall_ports }}"
 
-    - name: Enable UFW
+    - name: Enable firewall
       ufw:
         state: enabled
 
     # ========================================
-    # 8. DISABLE SWAP (for Kubernetes)
+    # Kubernetes Preparation
     # ========================================
-    - name: Disable swap
+    - name: Disable swap for Kubernetes
       command: swapoff -a
       when: ansible_swaptotal_mb > 0
 
-    - name: Remove swap from /etc/fstab
+    - name: Remove swap from fstab
       lineinfile:
         path: /etc/fstab
         regexp: '^\s*([^#\s]+\s+){1}(none|swap)\s+'
         state: absent
 
     # ========================================
-    # 9. DEPLOY TEST NGINX CONTAINER
+    # Docker Verification
     # ========================================
-    - name: Pull NGINX image
-      docker_image:
-        name: nginx
-        tag: alpine
-        source: pull
-
-    - name: Run NGINX test container
+    - name: Pull and run NGINX test container
       docker_container:
         name: nginx-test
         image: nginx:alpine
         state: started
         restart_policy: unless-stopped
-        ports:
-          - "8888:80"
+        ports: ["8888:80"]
 
-    - name: Test NGINX accessibility
+    - name: Verify Docker is working
       uri:
         url: http://localhost:8888
         status_code: 200
@@ -294,23 +244,19 @@
       delay: 5
 
     # ========================================
-    # 10. INITIALIZE KUBERNETES CLUSTER
+    # Kubernetes Cluster Init
     # ========================================
-    - name: Copy k8s init script
+    - name: Copy k8s initialization script
       copy:
         src: scripts/install-k8s.sh
         dest: /tmp/install-k8s.sh
         mode: '0755'
 
-    - name: Run k8s init script
+    - name: Initialize Kubernetes cluster
       shell: /tmp/install-k8s.sh
-      register: k8s_output
+      register: k8s_init
 
-    - name: Show k8s cluster status
-      debug:
-        var: k8s_output.stdout_lines
-
-    - name: Set up kubeconfig for root user
+    - name: Setup kubeconfig for root
       copy:
         src: /etc/kubernetes/admin.conf
         dest: /root/.kube/config
@@ -320,14 +266,8 @@
         remote_src: yes
       ignore_errors: yes
 
-    - name: Create .kube directory for root
-      file:
-        path: /root/.kube
-        state: directory
-        mode: '0755'
-
     # ========================================
-    # 11. INSTALL ARGOCD
+    # ArgoCD Installation
     # ========================================
     - name: Wait for Kubernetes cluster to be ready
       shell: kubectl get nodes --no-headers=true | grep -q "Ready"
@@ -343,23 +283,17 @@
       environment:
         KUBECONFIG: "/root/.kube/config"
 
-    - name: Download ArgoCD manifest
-      get_url:
-        url: https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-        dest: /tmp/argocd-install.yaml
-        mode: '0644'
-
     - name: Install ArgoCD
-      shell: kubectl apply -n argocd -f /tmp/argocd-install.yaml
+      shell: kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
       environment:
         KUBECONFIG: "/root/.kube/config"
 
-    - name: Wait for ArgoCD deployment to be ready
+    - name: Wait for ArgoCD deployment
       shell: kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=300s
       environment:
         KUBECONFIG: "/root/.kube/config"
 
-    - name: Create ArgoCD NodePort service manifest
+    - name: Create ArgoCD NodePort service
       copy:
         content: |
           apiVersion: v1
@@ -367,69 +301,49 @@
           metadata:
             name: argocd-server-nodeport
             namespace: argocd
-            labels:
-              app.kubernetes.io/component: server
-              app.kubernetes.io/name: argocd-server
-              app.kubernetes.io/part-of: argocd
           spec:
             type: NodePort
             ports:
               - name: server
                 port: 80
-                protocol: TCP
                 targetPort: 8080
                 nodePort: 30080
               - name: grpc
                 port: 443
-                protocol: TCP
                 targetPort: 8080
                 nodePort: 30443
             selector:
               app.kubernetes.io/name: argocd-server
         dest: /tmp/argocd-nodeport.yaml
-        mode: '0644'
 
     - name: Apply ArgoCD NodePort service
       shell: kubectl apply -f /tmp/argocd-nodeport.yaml
       environment:
         KUBECONFIG: "/root/.kube/config"
 
-    - name: Get ArgoCD initial admin password
-      shell: |
-        kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+    - name: Get ArgoCD admin password
+      shell: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
       register: argocd_password
       environment:
         KUBECONFIG: "/root/.kube/config"
       ignore_errors: yes
 
     - name: Install ArgoCD CLI
-      get_url:
-        url: "https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64"
-        dest: /usr/local/bin/argocd
-        mode: '0755'
+      shell: |
+        curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+        chmod +x /usr/local/bin/argocd
+      args:
+        creates: /usr/local/bin/argocd
 
-    - name: Create ArgoCD CLI symlink
-      file:
-        src: /usr/local/bin/argocd
-        dest: /usr/local/bin/argocd-cli
-        state: link
-
-    - name: Add ArgoCD server port to firewall
+    - name: Allow ArgoCD ports in firewall
       ufw:
         rule: allow
-        port: 30080
+        port: "{{ item }}"
         proto: tcp
-        comment: "ArgoCD Web UI"
-
-    - name: Add ArgoCD gRPC port to firewall
-      ufw:
-        rule: allow
-        port: 30443
-        proto: tcp
-        comment: "ArgoCD gRPC"
+      loop: [30080, 30443]
 
     # ========================================
-    # 12. INSTALL TRIVY (VULNERABILITY SCANNER)
+    # Security Scanning Tools
     # ========================================
     - name: Add Trivy GPG key
       apt_key:
@@ -441,84 +355,37 @@
         repo: "deb https://aquasecurity.github.io/trivy-repo/deb {{ ansible_distribution_release }} main"
         state: present
 
-    - name: Install Trivy
+    - name: Install Trivy (vulnerability scanner)
       apt:
         name: trivy
         state: present
         update_cache: yes
 
-    - name: Verify Trivy installation
-      shell: trivy version
-      register: trivy_version
-      changed_when: false
-
-    - name: Display Trivy version
-      debug:
-        msg: "Trivy installed: {{ trivy_version.stdout_lines[0] }}"
-
-    # ========================================
-    # 13. INSTALL SYFT (SBOM GENERATOR)
-    # ========================================
-    - name: Download Syft installation script
-      get_url:
-        url: https://raw.githubusercontent.com/anchore/syft/main/install.sh
-        dest: /tmp/install_syft.sh
-        mode: '0700'
-
-    - name: Install Syft
-      shell: /tmp/install_syft.sh -b /usr/local/bin
+    - name: Install Syft (SBOM generator)
+      shell: |
+        curl -sSL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
       args:
         creates: /usr/local/bin/syft
 
-    - name: Verify Syft installation
-      shell: syft version
-      register: syft_version
-      changed_when: false
-
-    - name: Display Syft version
-      debug:
-        msg: "Syft installed: {{ syft_version.stdout_lines[0] }}"
-
     # ========================================
-    # 15. FINAL SETUP SUMMARY
+    # Setup Summary
     # ========================================
-    - name: Final setup summary
+    - name: Display setup completion
       debug:
         msg: |
-          ========================================
-          Setup Complete!
-          ========================================
-          ✓ System updated
-          ✓ User '{{ devops_user }}' created with sudo access
-          ✓ Docker installed
-          ✓ Kubernetes tools installed (kubeadm, kubelet, kubectl)
-          ✓ Helm installed
-          ✓ Jenkins installed (access at http://{{ ansible_host }}:8080)
-          ✓ Jenkins user configured with sudo + kubectl access
-          ✓ Firewall configured
-          ✓ Swap disabled
-          ✓ NGINX test container running on port 8888
-          ✓ Kubernetes cluster initialized
-          ✓ ArgoCD installed and configured
-          ✓ Trivy installed (vulnerability scanner)
-          ✓ Syft installed (SBOM generator)
-          ========================================
-
-          Access Information:
-          - Jenkins Web UI: http://{{ ansible_host }}:8080
-          - ArgoCD Web UI: http://{{ ansible_host }}:30080
-          - ArgoCD Admin Password: {{ argocd_password.stdout | default('Check manually with: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d') }}
+          ✓ Setup Complete!
+          
+          Services Running:
+          - Jenkins: http://{{ ansible_host }}:8080
+          - ArgoCD: http://{{ ansible_host }}:30080
           - NGINX Test: http://{{ ansible_host }}:8888
-
-          Security Scanning Tools:
-          - Trivy: Container and dependency vulnerability scanner
-          - Syft: SBOM (Software Bill of Materials) generator
-
-          Next Steps:
-          1. Access ArgoCD at http://{{ ansible_host }}:30080
-          2. Login with username 'admin' and the password shown above
-          3. Create your first ArgoCD application
-          4. Set up GitOps repository for continuous deployment
-          5. Use Trivy for vulnerability scanning: trivy image <image-name>
-          6. Generate SBOM with Syft: syft <image-name>
-          ========================================
+          
+          Credentials:
+          - Jenkins Password: {{ jenkins_password['content'] | b64decode if jenkins_password.content is defined else 'Check Jenkins UI' }}
+          - ArgoCD Password: {{ argocd_password.stdout | default('Check with: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d') }}
+          
+          Security Tools:
+          - Trivy: trivy image <image-name>
+          - Syft: syft <image-name>
+          
+          Ready for application deployment!

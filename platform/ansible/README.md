@@ -1,6 +1,6 @@
 # Ansible
 
-Automated server setup that installs Docker, Kubernetes, Jenkins, and ArgoCD on your VM.Automated server setup that installs Docker, Kubernetes, Jenkins, and ArgoCD on your VM.
+Automated server setup that installs Docker, Kubernetes, Jenkins, and ArgoCD on your VM.
 
 ## What Gets Installed
 
@@ -15,22 +15,18 @@ Automated server setup that installs Docker, Kubernetes, Jenkins, and ArgoCD on 
 ## Quick Start
 
 **Step 1: Update Configuration**
-
-Edit `inventory.ini` with your server IP:Edit `inventory.ini` with your server IP:
-
-```ini```ini
-[servers][servers]
+Edit `inventory.ini` with your server IP:
+```ini
+[servers]
 ubuntu-server ansible_host=YOUR_SERVER_IP ansible_user=ubuntu
-
-``````
+```
 
 **Step 2: Run Playbook**
-
-```bash```bash
+```bash
 ansible-playbook -i inventory.ini setup.yml
-``````
+```
 
-Takes about 10-15 minutes to complete.Takes about 10-15 minutes to complete.
+Takes about 10-15 minutes to complete.
 
 ## What Happens During Setup
 
@@ -38,15 +34,53 @@ Takes about 10-15 minutes to complete.Takes about 10-15 minutes to complete.
 2. **Docker** - Installs container runtime with security permissions
 3. **Kubernetes** - Installs and initializes single-node cluster
 4. **Jenkins** - Sets up CI/CD server on port 8080
-5. **ArgoCD** - Configures GitOps platform5.
-6. **Security** - Hardens VM with firewall and user permissions6.
-7. **Verification** - Tests Docker and Kubernetes functionality7. 
+5. **ArgoCD** - Configures GitOps platform
+6. **Security** - Hardens VM with firewall and user permissions
+7. **Verification** - Tests Docker and Kubernetes functionality
 
-## After Setup Completes## After Setup Completes
+## After Setup Completes
 
 - **Jenkins**: Access at `http://YOUR_SERVER_IP:8080`
 - **ArgoCD**: Access at `http://YOUR_SERVER_IP:30080`
 - **Kubernetes**: Ready for application deployments
+
+## Setup Output Example
+
+After running the playbook successfully, you'll see:
+
+```
+TASK [Display setup completion] ****
+ok: [sameed] => {
+    "msg": "✓ Setup Complete!
+    
+Services Running:
+- Jenkins: http://YOUR_SERVER_IP:8080
+- ArgoCD: http://YOUR_SERVER_IP:30080
+- NGINX Test: http://YOUR_SERVER_IP:8888
+
+Credentials:
+- Jenkins Password: [generated-password]
+- ArgoCD Password: [generated-password]
+
+Security Tools:
+- Trivy: trivy image <image-name>
+- Syft: syft <image-name>
+
+Ready for application deployment!"
+}
+
+PLAY RECAP ****
+sameed: ok=50 changed=37 unreachable=0 failed=0 skipped=1
+```
+
+### What This Means
+
+- **ok=50** - 50 tasks completed successfully
+- **changed=37** - 37 changes made to the system
+- **failed=0** - No failures
+- **Total time** - ~10-15 minutes
+
+All services are now running and ready to use!
 
 ## Verification
 
@@ -100,6 +134,8 @@ The playbook creates two user accounts with different purposes:
 - Includes kubeconfig for cluster access
 
 Both users have sudo access and can run kubectl commands. This separation maintains security by isolating automated processes from interactive sessions.
+
+---
 
 ## Network Configuration
 
@@ -177,37 +213,4 @@ sudo journalctl -xeu kubelet
 # Check pod events
 kubectl describe pod <pod-name> -n kube-system
 ```
----
 
-## Implementation Overview
-
-This simplified implementation focuses on core functionality while maintaining production readiness:
-
-**Files Reference**
-
-| File | Purpose |
-|------|---------|
-| `setup.yml` | Main playbook with all provisioning tasks |
-| `inventory.ini` | Defines target servers and connection details |
-| `group_vars/all.yml` | Variables and configuration settings |
-| `ansible.cfg` | Ansible behavior and connection settings |
-| `scripts/install-k8s.sh` | Kubernetes cluster initialization script |
-| `commands.txt` | Manual command reference for understanding |
-
-**Services After Installation**
-
-| Service | Port | Access Method |
-|---------|------|---------------|
-| SSH | 22 | `ssh user@server_ip` |
-| Jenkins | 8080 | `http://server_ip:8080` |
-| Kubernetes API | 6443 | Internal cluster communication |
-| Test NGINX | 8888 | `http://server_ip:8888` |
-
-**Key Achievements**
-- Execution Time: 10-15 minutes for complete setup
-- Single playbook approach for simplicity
-- All required functionality maintained
-- Essential security configurations included
-- Production-ready service installations
-
-This implementation provides the foundation for deploying containerized applications with proper CI/CD automation while remaining accessible and maintainable for DevOps teams.
