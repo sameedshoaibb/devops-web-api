@@ -1,12 +1,12 @@
-# Default values for banking-api Helm chart
+# Default values for care-banking-app Helm chart
 
 replicaCount: 1
 
 # Application configuration
 app:
-  name: banking-api
+  name: care-banking-app
   version: "1.0.0"
-  image: sameedshoaib1/banking-api
+  image: sameedshoaib1/care-banking-app
   imageTag: v1.0.2
   imagePullPolicy: IfNotPresent
   port: 4000
@@ -99,7 +99,7 @@ resourceQuota:
 # PriorityClass configuration
 priorityClass:
   value: 1000
-  description: "Banking API - critical workload"
+  description: "CareBanking - critical workload"
 
 # Persistent Volume configuration
 persistentVolume:
