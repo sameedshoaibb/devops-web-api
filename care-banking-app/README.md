@@ -112,30 +112,28 @@ kubectl get all -n care-banking-app
 
 **Expected Output:**
 ```
-pod/care-banking-app-5ff446d8ff-8zphv               2/2     Running     0          27m
-pod/care-banking-app-5ff446d8ff-snpqv               2/2     Running     0          27m
-pod/care-banking-app-balance-check-29443586-7gt8t   0/1     Completed   0          7s
+NAME                                   READY   STATUS    RESTARTS   AGE
+pod/care-banking-app-b645867fb-d4t8z   2/2     Running   0          17m
+pod/care-banking-app-b645867fb-mm4p5   2/2     Running   0          113s
 
-NAME                  TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)           AGE
-service/care-banking-app   ClusterIP   10.99.250.178   <none>        80/TCP,4000/TCP   27m
+NAME                       TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)           AGE
+service/care-banking-app   ClusterIP   10.101.28.192   <none>        80/TCP,4000/TCP   62m
 
-NAME                          READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/care-banking-app   2/2     2            2           27m
+NAME                               READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/care-banking-app   2/2     2            2           62m
 
-NAME                                     DESIRED   CURRENT   READY   AGE
-replicaset.apps/care-banking-app-5ff446d8ff   2         2         2       27m
+NAME                                         DESIRED   CURRENT   READY   AGE
+replicaset.apps/care-banking-app-b645867fb   2         2         2       17m
 
-NAME                                              REFERENCE                TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
-horizontalpodautoscaler.autoscaling/care-banking-app   Deployment/care-banking-app   <unknown>/70%   2         5         2          27m
+NAME                                                   REFERENCE                     TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+horizontalpodautoscaler.autoscaling/care-banking-app   Deployment/care-banking-app   <unknown>/70%   2         5         2          62m
 
-NAME                                      SCHEDULE      SUSPEND   ACTIVE   LAST SCHEDULE   AGE
-cronjob.batch/care-banking-app-balance-check   */1 * * * *   False     0        7s              27m
+NAME                                           SCHEDULE      SUSPEND   ACTIVE   LAST SCHEDULE   AGE
+cronjob.batch/care-banking-app-balance-check   */1 * * * *   False     0        54s             2m43s
 
-NAME                                           COMPLETIONS   DURATION   AGE
-job.batch/care-banking-app-balance-check-29443559   0/1           27m        27m
-job.batch/care-banking-app-balance-check-29443584   1/1           4s         2m7s
-job.batch/care-banking-app-balance-check-29443585   1/1           4s         67s
-job.batch/care-banking-app-balance-check-29443586   1/1           4s         7s
+NAME                                                COMPLETIONS   DURATION   AGE
+job.batch/care-banking-app-balance-check-29446370   1/1           3s         114s
+job.batch/care-banking-app-balance-check-29446371   1/1           4s         54s
 ```
 
 ---
@@ -174,6 +172,8 @@ curl -s -X POST http://localhost:8181/account/test1/info \
 curl -s -X POST http://localhost:8181/account/test1/deposit \
   -H "Content-Type: application/json" \
   -d '{"password":"pass123","amount":5000}'
+
+  Output: {"balance":110000}
 ```
 
 ### Endpoint 5: Withdraw Funds
@@ -181,13 +181,17 @@ curl -s -X POST http://localhost:8181/account/test1/deposit \
 ```bash
 curl -s -X POST http://localhost:8181/account/test1/withdraw \
   -H "Content-Type: application/json" \
-  -d '{"password":"pass123","amount":41500}'
+  -d '{"password":"pass123","amount":1500}'
+
+  Output: {"balance":108500}
 ```
 
 ### Endpoint 6: List All Accounts (Admin Only)
 
 ```bash
 curl -s -H "x-api-key: sameed" http://localhost:8181/admin/accounts
+
+Output: {"accounts":{"test1":{"id":"test1","password":"pass123","balance":108500,"createdAt":1766782387129,"updatedAt":1766782438669}}}
 ```
 
 **Note:** Delete API only works if account balance is zero.
@@ -213,10 +217,8 @@ kubectl exec -n care-banking-app deploy/care-banking-app -c nginx-proxy -- tail 
 
 **Sample Output:**
 ```
-[SLOW_REQUEST] [25/Dec/2025:16:43:38 +0000] Remote: 127.0.0.1 | Request: POST /account/test1/withdraw HTTP/1.1 | Status: 200 | Time: 0.002 s
-[SLOW_REQUEST] [25/Dec/2025:16:43:39 +0000] Remote: 127.0.0.1 | Request: POST /account/test1/deposit HTTP/1.1 | Status: 200 | Time: 0.002 s
-[SLOW_REQUEST] [25/Dec/2025:16:43:40 +0000] Remote: 127.0.0.1 | Request: POST /account/test1/withdraw HTTP/1.1 | Status: 200 | Time: 0.002 s
-[SLOW_REQUEST] [25/Dec/2025:16:43:42 +0000] Remote: 127.0.0.1 | Request: POST /account/test1/withdraw HTTP/1.1 | Status: 200 | Time: 0.002 s
+[SLOW_REQUEST] [26/Dec/2025:20:53:07 +0000] Remote: 127.0.0.1 | Request: POST /admin/account HTTP/1.1 | Status: 200 | Time: 0.011 s
+[SLOW_REQUEST] [26/Dec/2025:20:53:25 +0000] Remote: 127.0.0.1 | Request: POST /account/test1/deposit HTTP/1.1 | Status: 200 | Time: 0.002 s
 ```
 
 ### 2. CronJob - Balance Check Status
@@ -230,14 +232,14 @@ kubectl logs -n care-banking-app -l job-type=cronjob --tail=10
 
 **Sample Output:**
 ```
-[2025-12/25 16:43:01] Starting balance check (threshold: -10000)
+[2025-12-26 20:55:00] Starting balance check (threshold: -10000)
 OK: No accounts found with critically low balance
-[2025-12/25 16:44:00] Starting balance check (threshold: -10000)
-ALERT: One or more accounts have a very low balance (below -10000)
-Alert email: alert@example.org
-[2025-12/25 16:45:00] Starting balance check (threshold: -10000)
-ALERT: One or more accounts have a very low balance (below -10000)
-Alert email: alert@example.org
+[2025-12-26 20:52:00] Starting balance check (threshold: -10000)
+OK: No accounts found with critically low balance
+[2025-12-26 20:53:00] Starting balance check (threshold: -10000)
+OK: No accounts found with critically low balance
+[2025-12-26 20:54:00] Starting balance check (threshold: -10000)
+OK: No accounts found with critically low balance
 ```
 
 ---
