@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: "{{ include "banking-api.fullname" . }}-test-connection"
+  name: "{{ include "care-banking-app.fullname" . }}-test-connection"
   labels:
-    {{- include "banking-api.labels" . | nindent 4 }}
+    {{- include "care-banking-app.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": test
 spec:
@@ -11,5 +11,5 @@ spec:
     - name: wget
       image: busybox
       command: ['wget']
-      args: ['{{ include "banking-api.fullname" . }}:{{ .Values.service.port }}/ping']
+      args: ['{{ include "care-banking-app.fullname" . }}:{{ .Values.service.port }}/ping']
   restartPolicy: Never

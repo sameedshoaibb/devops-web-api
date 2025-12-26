@@ -36,7 +36,7 @@ spec:
             - name: ADMIN_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: banking-api-key
+                  name: care-banking-app-key
                   key: adminApiKey
           resources:
             requests:
@@ -56,7 +56,7 @@ spec:
             #   mountPath: /data/dat.txt
             #   subPath: dat.txt
       containers:
-        - name: banking-api
+        - name: care-banking-app
           image: {{ .Values.app.image }}:{{ .Values.app.imageTag }}
           imagePullPolicy: {{ .Values.app.imagePullPolicy }}
           securityContext:

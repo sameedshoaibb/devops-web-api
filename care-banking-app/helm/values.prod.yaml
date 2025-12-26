@@ -41,11 +41,11 @@ resourceQuota:
 
 persistentVolume:
   size: 2Gi
-  storageClassName: banking-api-storage
+  storageClassName: care-banking-app-storage
 
 persistentVolumeClaim:
   size: 1Gi
-  storageClassName: banking-api-storage
+  storageClassName: care-banking-app-storage
 
 priorityClass:
   value: 1000

@@ -1,4 +1,4 @@
-# This is an ingress template file for the banking-api application. Since this setup reuires to modify the /etc/hosts file in the system, 
+# This is an ingress template file for the care-banking-app application. Since this setup reuires to modify the /etc/hosts file in the system, 
 # so we are not using this approch for now. The ingress resource is commented out.
 
 # apiVersion: networking.k8s.io/v1
@@ -10,7 +10,7 @@
 #     app: {{ .Values.app.name }}
 # spec:
 #   rules:
-#   - host: banking-api.local
+#   - host: care-banking-app.local
 #     http:
 #       paths:
 #       - path: /

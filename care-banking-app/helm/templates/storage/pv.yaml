@@ -12,6 +12,6 @@ spec:
   storageClassName: {{ .Values.persistentVolume.storageClassName }}
   persistentVolumeReclaimPolicy: Retain
   hostPath:
-    path: /mnt/banking-api-data
+    path: /mnt/care-banking-app-data
     type: DirectoryOrCreate
 

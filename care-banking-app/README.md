@@ -33,8 +33,8 @@ All the 6 API endpoints are functional:
 ### Build Commands
 
 ```bash
-docker build -t banking-api:v1.0.0 .
-docker run -dit -p 4000:4000 banking-api:v1.0.0
+docker build -t care-banking-app:v1.0.0 .
+docker run -dit -p 4000:4000 care-banking-app:v1.0.0
 docker exec -it <container_id> /bin/sh
 ```
 
@@ -83,16 +83,16 @@ The `deploy.sh` in the `scripts/deploy` folder now supports:
 ### Step 1: Build Docker Image
 
 ```bash
-cd banking-api
-docker build -t banking-api:v1.0.0 .
+cd care-banking-app
+docker build -t care-banking-app:v1.0.0 .
 ```
 
 ### Step 2: Create Kubernetes Secret
 
 ```bash
-kubectl create secret generic banking-api-key \
+kubectl create secret generic care-banking-app-key \
   --from-literal=adminApiKey=sameed \
-  -n banking-api
+  -n care-banking-app
 ```
 
 **Note:** Secrets are created outside of Helm for security reasons. They are injected into the app at runtime via an init container. For more details, see `helm/README.md`
@@ -103,23 +103,23 @@ Deploy to your desired environment:
 
 **Production:**
 ```bash
-./scripts/deploy/deploy.sh prod
+deploy.sh prod
 ```
 
 **Development:**
 ```bash
-./scripts/deploy/deploy.sh dev
+deploy.sh dev
 ```
 
 **Staging:**
 ```bash
-./scripts/deploy/deploy.sh staging
+deploy.sh staging
 ```
 
 ### Step 4: Port Forwarding (for local testing)
 
 ```bash
-kubectl port-forward -n banking-api svc/banking-api 8181:80 &
+kubectl port-forward -n care-banking-app svc/care-banking-app 8181:80 &
 ```
 
 **Note:** Port forwarding is used for local testing. Ingress was avoided to prevent requiring `/etc/hosts` file modifications with admin privileges.
@@ -131,35 +131,35 @@ kubectl port-forward -n banking-api svc/banking-api 8181:80 &
 
 After successful deployment, verify with:
 ```bash
-kubectl get all -n banking-api
+kubectl get all -n care-banking-app
 ```
 
 **Expected Output:**
 ```
-pod/banking-api-5ff446d8ff-8zphv               2/2     Running     0          27m
-pod/banking-api-5ff446d8ff-snpqv               2/2     Running     0          27m
-pod/banking-api-balance-check-29443586-7gt8t   0/1     Completed   0          7s
+pod/care-banking-app-5ff446d8ff-8zphv               2/2     Running     0          27m
+pod/care-banking-app-5ff446d8ff-snpqv               2/2     Running     0          27m
+pod/care-banking-app-balance-check-29443586-7gt8t   0/1     Completed   0          7s
 
 NAME                  TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)           AGE
-service/banking-api   ClusterIP   10.99.250.178   <none>        80/TCP,4000/TCP   27m
+service/care-banking-app   ClusterIP   10.99.250.178   <none>        80/TCP,4000/TCP   27m
 
 NAME                          READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/banking-api   2/2     2            2           27m
+deployment.apps/care-banking-app   2/2     2            2           27m
 
 NAME                                     DESIRED   CURRENT   READY   AGE
-replicaset.apps/banking-api-5ff446d8ff   2         2         2       27m
+replicaset.apps/care-banking-app-5ff446d8ff   2         2         2       27m
 
 NAME                                              REFERENCE                TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
-horizontalpodautoscaler.autoscaling/banking-api   Deployment/banking-api   <unknown>/70%   2         5         2          27m
+horizontalpodautoscaler.autoscaling/care-banking-app   Deployment/care-banking-app   <unknown>/70%   2         5         2          27m
 
 NAME                                      SCHEDULE      SUSPEND   ACTIVE   LAST SCHEDULE   AGE
-cronjob.batch/banking-api-balance-check   */1 * * * *   False     0        7s              27m
+cronjob.batch/care-banking-app-balance-check   */1 * * * *   False     0        7s              27m
 
 NAME                                           COMPLETIONS   DURATION   AGE
-job.batch/banking-api-balance-check-29443559   0/1           27m        27m
-job.batch/banking-api-balance-check-29443584   1/1           4s         2m7s
-job.batch/banking-api-balance-check-29443585   1/1           4s         67s
-job.batch/banking-api-balance-check-29443586   1/1           4s         7s
+job.batch/care-banking-app-balance-check-29443559   0/1           27m        27m
+job.batch/care-banking-app-balance-check-29443584   1/1           4s         2m7s
+job.batch/care-banking-app-balance-check-29443585   1/1           4s         67s
+job.batch/care-banking-app-balance-check-29443586   1/1           4s         7s
 ```
 
 ---
@@ -227,7 +227,7 @@ After running all the endpoints, we will have the data to see the results.
 View slow requests (requests taking > 0.001 seconds):
 
 ```bash
-kubectl exec -n banking-api deploy/banking-api -c nginx-proxy -- tail -5 /var/log/nginx/slow_requests.log
+kubectl exec -n care-banking-app deploy/care-banking-app -c nginx-proxy -- tail -5 /var/log/nginx/slow_requests.log
 ```
 
 **Implementation Details:**
@@ -250,7 +250,7 @@ The CronJob runs every minute to check for accounts with critically low balance 
 
 **View CronJob logs:**
 ```bash
-kubectl logs -n banking-api -l job-type=cronjob --tail=10
+kubectl logs -n care-banking-app -l job-type=cronjob --tail=10
 ```
 
 **Sample Output:**
@@ -271,20 +271,20 @@ Alert email: alert@example.org
 
 **Preview changes before deploying:**
 ```bash
-./scripts/deploy/deploy.sh prod diff
+deploy.sh prod diff
 ```
 
 **Validate Helm chart:**
 ```bash
-./scripts/deploy/deploy.sh prod lint
+deploy.sh prod lint
 ```
 
 **Generate manifest without deploying:**
 ```bash
-./scripts/deploy/deploy.sh prod template
+deploy.sh prod template
 ```
 
 **Uninstall deployment:**
 ```bash
-./scripts/deploy/deploy.sh prod uninstall
+deploy.sh prod uninstall
 ```

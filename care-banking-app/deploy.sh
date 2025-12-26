@@ -27,9 +27,9 @@ fi
 
 # Create namespace if it doesn't exist
 create_namespace() {
-    if ! kubectl get namespace banking-api &> /dev/null; then
-        echo "Creating namespace: banking-api"
-        kubectl create namespace banking-api
+    if ! kubectl get namespace care-banking-app &> /dev/null; then
+        echo "Creating namespace: care-banking-app"
+        kubectl create namespace care-banking-app
     fi
 }
 
@@ -37,14 +37,14 @@ create_namespace() {
 if [ "$COMMAND" = "deploy" ]; then
     create_namespace
     echo "Deploying your application:"
-    helm upgrade --install banking-api ./helm -f "$VALUES_FILE" -n banking-api
+    helm upgrade --install care-banking-app ./helm -f "$VALUES_FILE" -n care-banking-app
     echo ""
     echo "Deployment complete!"
     
 elif [ "$COMMAND" = "diff" ]; then
     create_namespace
     echo "Checking the difference:"
-    helm diff upgrade --install banking-api ./helm -f "$VALUES_FILE" -n banking-api
+    helm diff upgrade --install care-banking-app ./helm -f "$VALUES_FILE" -n care-banking-app
     echo ""
     echo "Difference complete!"
 
@@ -56,13 +56,13 @@ elif [ "$COMMAND" = "lint" ]; then
 
 elif [ "$COMMAND" = "template" ]; then
     echo "Rendering templates:"
-    helm template banking-api ./helm -f "$VALUES_FILE" -n banking-api
+    helm template care-banking-app ./helm -f "$VALUES_FILE" -n care-banking-app
     echo ""
     echo "The template rendering complete!"
 
 elif [ "$COMMAND" = "uninstall" ]; then
     echo "Uninstalling release:"
-    helm uninstall banking-api -n banking-api
+    helm uninstall care-banking-app -n care-banking-app
     echo ""
     echo "Uninstall complete!"
     
