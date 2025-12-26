@@ -1,116 +1,52 @@
-# Ansible# Ansible
-
-
+# Ansible
 
 Automated server setup that installs Docker, Kubernetes, Jenkins, and ArgoCD on your VM.Automated server setup that installs Docker, Kubernetes, Jenkins, and ArgoCD on your VM.
 
+## What Gets Installed
 
+- **Docker** - Container runtime for building and running applications
+- **Kubernetes** - Container orchestration platform (single-node cluster)
+- **Jenkins** - CI/CD automation server
+- **Helm** - Kubernetes package manager
+- **ArgoCD** - GitOps continuous deployment platform
+- **UFW Firewall** - Security with configured inbound rules
+- **System Security** - Non-root user with sudo, SSH key authentication, swap disabled
 
-## What Gets Installed## What Gets Installed
+## Quick Start
 
-
-
-- **Docker** - Container runtime for building and running applications- **Docker** - Container runtime for building and running applications
-
-- **Kubernetes** - Container orchestration platform (single-node cluster)- **Kubernetes** - Container orchestration platform (single-node cluster)
-
-- **Jenkins** - CI/CD automation server- **Jenkins** - CI/CD automation server
-
-- **Helm** - Kubernetes package manager- **Helm** - Kubernetes package manager
-
-- **ArgoCD** - GitOps continuous deployment platform- **ArgoCD** - GitOps continuous deployment platform
-
-- **UFW Firewall** - Security with configured inbound rules- **UFW Firewall** - Security with configured inbound rules
-
-- **System Security** - Non-root user with sudo, SSH key authentication, swap disabled- **System Security** - Non-root user with sudo, SSH key authentication, swap disabled
-
-
-
-## Quick Start## Quick Start
-
-
-
-**Step 1: Update Configuration****Step 1: Update Configuration**
+**Step 1: Update Configuration**
 
 Edit `inventory.ini` with your server IP:Edit `inventory.ini` with your server IP:
 
 ```ini```ini
-
 [servers][servers]
-
-ubuntu-server ansible_host=YOUR_SERVER_IP ansible_user=ubuntuubuntu-server ansible_host=YOUR_SERVER_IP ansible_user=ubuntu
+ubuntu-server ansible_host=YOUR_SERVER_IP ansible_user=ubuntu
 
 ``````
 
-
-
-**Step 2: Run Playbook****Step 2: Run Playbook**
+**Step 2: Run Playbook**
 
 ```bash```bash
-
-ansible-playbook -i inventory.ini setup.ymlansible-playbook -i inventory.ini setup.yml
-
+ansible-playbook -i inventory.ini setup.yml
 ``````
-
-
 
 Takes about 10-15 minutes to complete.Takes about 10-15 minutes to complete.
 
+## What Happens During Setup
 
-
-## What Happens During Setup## What Happens During Setup
-
-
-
-1. **System** - Updates packages, installs essentials1. **System** - Updates packages, installs essentials
-
-2. **Docker** - Installs container runtime with security permissions2. **Docker** - Installs container runtime with security permissions
-
-3. **Kubernetes** - Installs and initializes single-node cluster3. **Kubernetes** - Installs and initializes single-node cluster
-
-4. **Jenkins** - Sets up CI/CD server on port 80804. **Jenkins** - Sets up CI/CD server on port 8080
-
-5. **ArgoCD** - Configures GitOps platform5. **ArgoCD** - Configures GitOps platform
-
-6. **Security** - Hardens VM with firewall and user permissions6. **Security** - Hardens VM with firewall and user permissions
-
-7. **Verification** - Tests Docker and Kubernetes functionality7. **Verification** - Tests Docker and Kubernetes functionality
-
-
+1. **System** - Updates packages, installs essentials
+2. **Docker** - Installs container runtime with security permissions
+3. **Kubernetes** - Installs and initializes single-node cluster
+4. **Jenkins** - Sets up CI/CD server on port 8080
+5. **ArgoCD** - Configures GitOps platform5.
+6. **Security** - Hardens VM with firewall and user permissions6.
+7. **Verification** - Tests Docker and Kubernetes functionality7. 
 
 ## After Setup Completes## After Setup Completes
 
-
-
-- **Jenkins**: Access at `http://YOUR_SERVER_IP:8080`- **Jenkins**: Access at `http://YOUR_SERVER_IP:8080`
-
-- **ArgoCD**: Access at `http://YOUR_SERVER_IP:30080`- **ArgoCD**: Access at `http://YOUR_SERVER_IP:30080`
-
-- **Kubernetes**: Ready for application deployments- **Kubernetes**: Ready for application deployments
-
-
-```## File Structure
-
-
-
-This takes about 5-10 minutes depending on your server and internet speed.```
-
-ansible/
-
-### Verify Everything Works├── ansible.cfg          # Ansible configuration
-
-├── inventory.ini        # Server inventory
-
-After the playbook finishes:├── setup.yml           # Main playbook (run this)
-
-├── group_vars/
-
-```bash│   └── all.yml         # Variables
-
-# SSH to your server└── README-SIMPLE.md    # This file
-
-ssh -i ~/.ssh/your_key your_user@YOUR_SERVER_IP```
-
+- **Jenkins**: Access at `http://YOUR_SERVER_IP:8080`
+- **ArgoCD**: Access at `http://YOUR_SERVER_IP:30080`
+- **Kubernetes**: Ready for application deployments
 
 ## Verification
 
@@ -209,9 +145,6 @@ ansible all -m ping
 ```bash
 # Run with verbose output for debugging
 ansible-playbook setup.yml -vvv
-
-# Check specific task failure
-ansible-playbook setup.yml --start-at-task="task_name"
 ```
 
 ### Service Issues
@@ -239,23 +172,11 @@ kubectl cluster-info
 kubectl get nodes -o wide
 
 # Check kubelet logs
-sudo journalctl -xeu kubelet | tail -50
+sudo journalctl -xeu kubelet 
 
 # Check pod events
 kubectl describe pod <pod-name> -n kube-system
 ```
-
-**Need to start over:**
-
-```bash
-# Reset Kubernetes cluster
-sudo kubeadm reset -f
-sudo rm -rf /etc/cni/net.d ~/.kube /var/lib/etcd
-
-# Re-run playbook
-ansible-playbook setup.yml
-```
-
 ---
 
 ## Implementation Overview
