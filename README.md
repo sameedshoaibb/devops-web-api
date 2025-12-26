@@ -32,13 +32,23 @@ What it does: Everything related to the application itself including code, build
 
 ## Project Workflow
 
+**Prerequisites (One-time Setup):**
+- Set up Docker Hub account and create access token
+- Create Jenkins pipeline and configure secrets
+- Add Docker Hub credentials in Jenkins
+- Set up GitHub webhook to trigger Jenkins pipeline
+- Configure ArgoCD with Git repository access and target repositories for deployment
+- Link ArgoCD to Kubernetes cluster
+
+**Once setup is complete, the automated flow:**
+
 1. **Developer pushes code to GitHub** - Push changes to the repository
 2. **GitHub triggers Jenkins pipeline via webhook** - Automatic trigger on code push
 3. **DevSecOps pipeline executes** - Builds Docker image, runs security tests, pushes to Docker Hub, updates deployment config
 4. **ArgoCD detects configuration changes** - Automatically syncs to Kubernetes cluster
 5. **App is live in ~5 minutes** - Zero manual work, fully automated
 
-**For detailed pipeline steps and configuration**, see the README files in `platform/` and `care-banking-api/` folders.
+**For detailed pipeline setup and configuration**, see the README files in `platform/` and `care-banking-api/` folders.
 
 ## Key Technologies
 
@@ -48,9 +58,9 @@ What it does: Everything related to the application itself including code, build
 
 3. **Docker** - Creates container images for the application with multi-stage builds and security hardening.
 
-4. **Kubernetes** - Runs as a single-node cluster on the VM, suitable for development and testing environments.
+4. **Kubernetes** - Runs as a single-node cluster on the VM.
 
-5. **Helm** - Provides Kubernetes deployment templates optimized for single-node setup with environment-specific configurations.
+5. **Helm** - Kubernetes deployment templates optimized for single-node setup with environment-specific configurations.
 
 6. **Jenkins** - Handles CI/CD automation to build, test, and deploy code on every change with security scans.
 
@@ -58,7 +68,7 @@ What it does: Everything related to the application itself including code, build
 
 ## Getting Started
 
-### Step 1: Terraform (Already Done ✅)
+### Step 1: Terraform (Already Done)
 The Azure infrastructure has been deployed with Terraform. You now have:
 - Ubuntu VM running in Azure (UK West region)
 - Virtual network with security rules configured
@@ -105,6 +115,21 @@ Each folder contains its own README with complete details:
 - **care-banking-api/README.md** - Application endpoints, deployment guide, API testing examples, and development tips
 
 Start with these README files for in-depth information about each component.
+
+## Technical Deep Dives by Topic
+
+For specific technical concerns, refer to these resources:
+
+| Concern | Location | Details |
+|---------|----------|---------|
+| Security & RBAC | care-banking-api/helm/templates/rbac/ | Service accounts, roles, role bindings for least privilege access |
+| Network Security | care-banking-api/helm/templates/policies/ | Network policies, pod disruption budgets, resource quotas |
+| Storage & Persistence | care-banking-api/helm/templates/storage/ | Persistent volumes, persistent volume claims configuration |
+| High Availability | care-banking-api/helm/templates/advanced/ | Horizontal pod autoscaling, vertical pod autoscaling, priority classes |
+| CI/CD Pipeline | care-banking-api/Jenkinsfile | 13-stage pipeline with security scans, testing, and deployment gates |
+| Infrastructure as Code | platform/terraform/ | Azure resources, networking, security groups, monitoring configuration |
+| Configuration Management | platform/ansible/ | Automated server setup, tool installation, security hardening |
+| Container Configuration | care-banking-api/Dockerfile | Multi-stage build, security hardening, optimization |
 
 ## Project Structure
 
