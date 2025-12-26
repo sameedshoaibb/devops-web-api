@@ -131,6 +131,25 @@ For specific technical concerns, refer to these resources:
 | Configuration Management | platform/ansible/ | Automated server setup, tool installation, security hardening |
 | Container Configuration | care-banking-api/Dockerfile | Multi-stage build, security hardening, optimization |
 
+## CI/CD & Deployment Tools
+
+Add snapshots and details here for your CI/CD ecosystem components:
+
+### Jenkins Pipeline
+13-stage automated CI/CD pipeline that runs on every code push:
+
+[Add Jenkins Pipeline Snapshot Here]
+
+### SonarCloud Code Quality
+Static code analysis and security scanning:
+
+[Add SonarCloud Snapshot Here]
+
+### ArgoCD GitOps Deployment
+Continuous deployment and application synchronization:
+
+[Add ArgoCD Dashboard Snapshot Here]
+
 ## Project Structure
 
 Read in this order: Terraform → Ansible → Care-Banking-Api
