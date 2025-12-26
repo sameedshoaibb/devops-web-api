@@ -198,18 +198,11 @@ pipeline {
         stage('Update Helm Values') {
             steps {
                 sh '''
-                    echo "=========================================="
-                    echo "UPDATING HELM VALUES WITH IMAGE TAG"
-                    echo "=========================================="
-                    
                     # Update app imageTag only (not nginx)
                     sed -i "/^app:/,/^[a-z]/ s/imageTag: .*/imageTag: ${IMAGE_TAG}/" care-banking-app/helm/values.prod.yaml
-                    
                     echo "Production: care-banking-app/helm/values.prod.yaml"
                     grep "imageTag:" care-banking-app/helm/values.prod.yaml
-                    
-                    echo "=========================================="
-                '''
+                                    '''
             }
         }
 
@@ -232,14 +225,9 @@ pipeline {
                         if git diff --quiet care-banking-app/helm/values.prod.yaml; then
                             echo "No changes in Helm values"
                         else
-                            echo "=========================================="
-                            echo "COMMITTING HELM VALUE UPDATES"
-                            echo "=========================================="
                             git add care-banking-app/helm/values.prod.yaml
-                            
                             git commit -m "Update Helm values and image tag to ${IMAGE_TAG}"
                             git push https://${GIT_TOKEN}@github.com/sameedshoaibb/devops-web-api.git HEAD:main
-                            echo "=========================================="
                         fi
                     '''
                 }
