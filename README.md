@@ -1,8 +1,8 @@
-# Care Banking API - DevOps Platform
+# Care Banking Platform
 
 ## Purpose
 
-This is a complete DevOps solution that automates building, testing, and deploying a Banking API application to a single-node Kubernetes cluster. It implements **GitOps principles** for automatic, secure, and reliable deployments using a minimal infrastructure setup. The platform supports multiple environments (development, staging, and production), with production environment currently set up and operational.
+This is a complete DevOps solution that automates building, testing, and deploying a Banking application to a single-node Kubernetes cluster. It implements **GitOps principles** for automatic, secure, and reliable deployments using a minimal infrastructure setup. The platform supports multiple environments (development, staging, and production), with production environment currently set up and operational.
 
 ## What's Inside
 
@@ -16,11 +16,11 @@ What it contains:
 
 What it does: Terraform creates the cloud infrastructure, then Ansible configures it with all DevOps tools.
 
-### 02- Care-Banking-Api Folder
-The actual Banking API application that gets built and deployed.
+### 02- Care-Banking-App Folder
+The actual Banking application that gets built and deployed.
 
 What it contains:
-- **Source code** - Node.js/TypeScript banking API with 6 endpoints for account management, user and admin routes.
+- **Source code** - Node.js/TypeScript banking application with 6 endpoints for account management, user and admin routes.
   
 - **Helm charts** - Kubernetes deployment configuration with environment-specific values for dev, staging, and production. The platform architecture supports all three environments, with production currently active. Development and staging environments are configured and ready for future setup. Contains Kubernetes templates for pods, services, storage, security, and more.
   
@@ -48,7 +48,7 @@ What it does: Everything related to the application itself including code, build
 4. **ArgoCD detects configuration changes** - Automatically syncs to Kubernetes cluster
 5. **App is live in ~5 minutes** - Zero manual work, fully automated
 
-**For detailed pipeline setup and configuration**, see the README files in `platform/` and `care-banking-api/` folders.
+**For detailed pipeline setup and configuration**, see the README files in `platform/` and `care-banking-app/` folders.
 
 ## Key Technologies
 
@@ -101,10 +101,10 @@ Takes about 10-15 minutes to complete.
 
 **For detailed instructions:** See `platform/ansible/README.md`
 
-### Step 4: Deploy the Banking API
+### Step 4: Deploy the Banking App
 Once Ansible finishes, the Jenkins and ArgoCD will be running on your VM. Push code changes to GitHub and they will automatically build and deploy via the CI/CD pipeline.
 
-**For detailed instructions:** See `care-banking-api/README.md`
+**For detailed instructions:** See `care-banking-app/README.md`
 
 ## Detailed Documentation
 
@@ -112,7 +112,7 @@ Each folder contains its own README with complete details:
 
 - **platform/terraform/README.md** - Infrastructure setup, Azure credentials, deployment commands, and troubleshooting
 - **platform/ansible/README.md** - What gets installed, configuration options, playbook structure, and verification steps
-- **care-banking-api/README.md** - Application endpoints, deployment guide, API testing examples, and development tips
+- **care-banking-app/README.md** - Application endpoints, deployment guide, API testing examples, and development tips
 
 Start with these README files for in-depth information about each component.
 
@@ -122,14 +122,14 @@ For specific technical concerns, refer to these resources:
 
 | Concern | Location | Details |
 |---------|----------|---------|
-| Security & RBAC | care-banking-api/helm/templates/rbac/ | Service accounts, roles, role bindings for least privilege access |
-| Network Security | care-banking-api/helm/templates/policies/ | Network policies, pod disruption budgets, resource quotas |
-| Storage & Persistence | care-banking-api/helm/templates/storage/ | Persistent volumes, persistent volume claims configuration |
-| High Availability | care-banking-api/helm/templates/advanced/ | Horizontal pod autoscaling, vertical pod autoscaling, priority classes |
-| CI/CD Pipeline | care-banking-api/Jenkinsfile | 13-stage pipeline with security scans, testing, and deployment gates |
+| Security & RBAC | care-banking-app/helm/templates/rbac/ | Service accounts, roles, role bindings for least privilege access |
+| Network Security | care-banking-app/helm/templates/policies/ | Network policies, pod disruption budgets, resource quotas |
+| Storage & Persistence | care-banking-app/helm/templates/storage/ | Persistent volumes, persistent volume claims configuration |
+| High Availability | care-banking-app/helm/templates/advanced/ | Horizontal pod autoscaling, vertical pod autoscaling, priority classes |
+| CI/CD Pipeline | care-banking-app/Jenkinsfile | 13-stage pipeline with security scans, testing, and deployment gates |
 | Infrastructure as Code | platform/terraform/ | Azure resources, networking, security groups, monitoring configuration |
 | Configuration Management | platform/ansible/ | Automated server setup, tool installation, security hardening |
-| Container Configuration | care-banking-api/Dockerfile | Multi-stage build, security hardening, optimization |
+| Container Configuration | care-banking-app/Dockerfile | Multi-stage build, security hardening, optimization |
 
 ## CI/CD & Deployment Tools
 
@@ -152,10 +152,10 @@ Continuous deployment and application synchronization:
 
 ## Project Structure
 
-Read in this order: Terraform → Ansible → Care-Banking-Api
+Read in this order: Terraform → Ansible → Care-Banking-App
 
 ```
-oncare-devops-task/
+care-banking-platform/
 ├── README.md
 ├── banking.md
 │
@@ -183,7 +183,7 @@ oncare-devops-task/
 │       ├── ARGOCD.md
 │       └── CLEANUP_SUMMARY.md
 │
-└── care-banking-api/                 ← Finally: Deploy your application
+└── care-banking-app/                 ← Finally: Deploy your application
     ├── README.md
     ├── Jenkinsfile                   (CI/CD pipeline)
     ├── Dockerfile                    (Container image)
