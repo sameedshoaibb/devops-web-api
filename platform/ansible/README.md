@@ -1,202 +1,93 @@
-# Ansible Infrastructure Setup
-
-## Overview
-
-This Ansible playbook automates the complete setup of an Ubuntu server for container orchestration and CI/CD operations. The playbook installs and configures Docker, Kubernetes, Jenkins, and Helm while implementing security best practices and creating proper user accounts for automation workflows.
-
-## What Gets Installed
-
-The playbook installs and configures the following components:
-
-**System Components:**
-- System updates and essential packages
-- Docker CE with proper group permissions
-- Kubernetes tools (kubeadm, kubelet, kubectl)
-- Helm package manager
-- Jenkins CI/CD server
-- ArgoCD GitOps platform
-
-**Security and User Management:**
-- Non-root user with SSH access and sudo privileges
-- UFW firewall with configured ports
-- Swap disabled (required for Kubernetes)
-- SSH key-based authentication
-
-**GitOps and Automation:**
-- ArgoCD for continuous deployment
-- Jenkins for CI/CD pipelines
-- Automated GitOps workflow setup
-- Multi-environment deployment capability
-
-**Testing and Verification:**
-- NGINX test container for Docker verification
-- Kubernetes cluster initialization
-- Service validation checks
-
-## Why Use Ansible
-
-Manual server setup involves running dozens of commands, waiting for downloads, and managing complex configuration steps. Ansible automates this entire process through infrastructure as code, providing:
-
-- **Consistency** - Same configuration every time
-- **Reproducibility** - Easy to replicate across multiple servers
-- **Documentation** - Configuration is self-documenting
-- **Error Recovery** - Can re-run playbook to fix issues
-- **Time Savings** - Reduces setup time from hours to minutes
-
-## Project Structure
-
-```
-ansible/
-├── ansible.cfg              # Ansible configuration settings
-├── inventory.ini            # Target server definitions
-├── setup.yml               # Main provisioning playbook
-├── requirements.yml         # Ansible collection requirements
-├── group_vars/
-│   └── all.yml             # Global variables and settings
-├── scripts/
-│   └── install-k8s.sh      # Kubernetes cluster initialization
-├── commands.txt            # Manual command reference
-├── QUICKSTART.md           # Quick setup guide
-├── ARGOCD.md               # ArgoCD setup and usage guide
-└── README.md               # This documentation
-├── QUICKSTART.md           # Quick setup guide
-└── README.md               # This documentation
-```
-
----
-
-## Getting Started
-
-### Prerequisites
-
-Before running this playbook, ensure you have:
-
-- Ubuntu 20.04 or 22.04 target server
-- Ansible installed on your local machine: `pip3 install ansible`
-- SSH access to the target server
-- sudo privileges on the target server
-
-### Install Required Collections
-
-Install the required Ansible collections:
-
-```bash
-ansible-galaxy collection install -r requirements.yml
-```
-
-Or install individually:
-```bash
-ansible-galaxy collection install kubernetes.core
-```
-
-### Configuration
-
-Edit `inventory.ini` with your server details:
-
-```ini
-[servers]
-ubuntu-server ansible_host=YOUR_SERVER_IP ansible_user=ubuntu
-```
-
-Edit `group_vars/all.yml` with your SSH public key:
-
-```yaml
-ssh_public_key: "ssh-rsa AAAAB3NzaC... your-actual-key"
-```
-
-### Execution
-
-Test connectivity to your server:
-
-```bash
-ansible all -m ping
-```
-
-Run the main provisioning playbook:
-
-```bash
-ansible-playbook setup.yml
-```
-
-For detailed output during execution:
-
-```bash
-ansible-playbook setup.yml -v
-```
-
----
-
-## Installation Components
-
-The playbook executes the following tasks in sequence:
-
-### System Preparation
-1. **System Update** - Updates all packages to latest versions
-2. **Essential Packages** - Installs curl, wget, git, and other utilities
-3. **User Management** - Creates devops user with sudo access and SSH key authentication
-
-### Container Platform
-4. **Docker Installation** - Installs Docker CE with proper group permissions
-5. **Kubernetes Tools** - Installs kubeadm, kubelet, kubectl (v1.28)
-6. **Helm Installation** - Package manager for Kubernetes applications
-
-### CI/CD Platform
-7. **Jenkins Setup** - Installs Jenkins CI/CD server on port 8080
-8. **Jenkins Configuration** - Creates jenkins user with Kubernetes access
-
-### Security and Networking
-9. **Firewall Configuration** - Configures UFW with necessary ports (22, 80, 443, 6443, 8080, 10250, 8888)
-10. **Swap Disable** - Disables swap (required for Kubernetes)
-
-### Verification
-11. **Docker Test** - Runs NGINX container on port 8888 to verify Docker functionality
-12. **Kubernetes Initialization** - Sets up single-node cluster with Flannel networking
-
----
-
-## Post-Installation Steps
-
-### Initialize Kubernetes Cluster
-
-SSH into your server and initialize Kubernetes:
-
-```bash
-ssh devops@YOUR_SERVER_IP
-sudo kubeadm init --pod-network-cidr=10.244.0.0/16
-mkdir -p $HOME/.kube
-sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-sudo chown $(id -u):$(id -g) $HOME/.kube/config
-```
-
-### Access Jenkins
-
-Access Jenkins web interface:
-- URL: `http://YOUR_SERVER_IP:8080`
-- Initial admin password: Displayed at end of playbook output
-
-### Verify Docker Installation
-
-Test Docker functionality:
-
-```bash
-curl http://YOUR_SERVER_IP:8888
-```
-
-Expected response: NGINX welcome page
-
----
+# Ansible# Ansible
 
 
 
-### Run the Playbook### Verify NGINX
+Automated server setup that installs Docker, Kubernetes, Jenkins, and ArgoCD on your VM.Automated server setup that installs Docker, Kubernetes, Jenkins, and ArgoCD on your VM.
 
-```bash
 
-```bashcurl http://YOUR_SERVER_IP:8888
 
-cd ansible```
+## What Gets Installed## What Gets Installed
 
-ansible-playbook setup.yml
+
+
+- **Docker** - Container runtime for building and running applications- **Docker** - Container runtime for building and running applications
+
+- **Kubernetes** - Container orchestration platform (single-node cluster)- **Kubernetes** - Container orchestration platform (single-node cluster)
+
+- **Jenkins** - CI/CD automation server- **Jenkins** - CI/CD automation server
+
+- **Helm** - Kubernetes package manager- **Helm** - Kubernetes package manager
+
+- **ArgoCD** - GitOps continuous deployment platform- **ArgoCD** - GitOps continuous deployment platform
+
+- **UFW Firewall** - Security with configured inbound rules- **UFW Firewall** - Security with configured inbound rules
+
+- **System Security** - Non-root user with sudo, SSH key authentication, swap disabled- **System Security** - Non-root user with sudo, SSH key authentication, swap disabled
+
+
+
+## Quick Start## Quick Start
+
+
+
+**Step 1: Update Configuration****Step 1: Update Configuration**
+
+Edit `inventory.ini` with your server IP:Edit `inventory.ini` with your server IP:
+
+```ini```ini
+
+[servers][servers]
+
+ubuntu-server ansible_host=YOUR_SERVER_IP ansible_user=ubuntuubuntu-server ansible_host=YOUR_SERVER_IP ansible_user=ubuntu
+
+``````
+
+
+
+**Step 2: Run Playbook****Step 2: Run Playbook**
+
+```bash```bash
+
+ansible-playbook -i inventory.ini setup.ymlansible-playbook -i inventory.ini setup.yml
+
+``````
+
+
+
+Takes about 10-15 minutes to complete.Takes about 10-15 minutes to complete.
+
+
+
+## What Happens During Setup## What Happens During Setup
+
+
+
+1. **System** - Updates packages, installs essentials1. **System** - Updates packages, installs essentials
+
+2. **Docker** - Installs container runtime with security permissions2. **Docker** - Installs container runtime with security permissions
+
+3. **Kubernetes** - Installs and initializes single-node cluster3. **Kubernetes** - Installs and initializes single-node cluster
+
+4. **Jenkins** - Sets up CI/CD server on port 80804. **Jenkins** - Sets up CI/CD server on port 8080
+
+5. **ArgoCD** - Configures GitOps platform5. **ArgoCD** - Configures GitOps platform
+
+6. **Security** - Hardens VM with firewall and user permissions6. **Security** - Hardens VM with firewall and user permissions
+
+7. **Verification** - Tests Docker and Kubernetes functionality7. **Verification** - Tests Docker and Kubernetes functionality
+
+
+
+## After Setup Completes## After Setup Completes
+
+
+
+- **Jenkins**: Access at `http://YOUR_SERVER_IP:8080`- **Jenkins**: Access at `http://YOUR_SERVER_IP:8080`
+
+- **ArgoCD**: Access at `http://YOUR_SERVER_IP:30080`- **ArgoCD**: Access at `http://YOUR_SERVER_IP:30080`
+
+- **Kubernetes**: Ready for application deployments- **Kubernetes**: Ready for application deployments
+
 
 ```## File Structure
 
